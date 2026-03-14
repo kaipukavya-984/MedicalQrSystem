@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureHealth QR — Gateway</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --patient-bg:    #0a1628;
+      --patient-acc:   #e63946;
+      --patient-glow:  rgba(230,57,70,0.3);
+      --patient-dim:   rgba(230,57,70,0.12);
+      --doctor-bg:     #f5f7fa;
+      --doctor-acc:    #0d1b2a;
+      --doctor-teal:   #0096c7;
+      --doctor-glow:   rgba(0,150,199,0.25);
+      --doctor-dim:    rgba(0,150,199,0.1);
+      --white:         #f0f4fa;
+      --white-60:      rgba(240,244,250,0.6);
+      --white-12:      rgba(240,244,250,0.12);
+      --white-06:      rgba(240,244,250,0.06);
+      --ink:           #0d1b2a;
+      --ink-50:        rgba(13,27,42,0.5);
+      --ink-08:        rgba(13,27,42,0.08);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* ═══════════════════════════════
+       SPLIT CONTAINER
+    ═══════════════════════════════ */
+    .gateway {
+      display: flex;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* Central divider line */
+    .divider {
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(255,255,255,0.25) 20%,
+        rgba(255,255,255,0.55) 50%,
+        rgba(255,255,255,0.25) 80%,
+        transparent 100%
+      );
+      z-index: 10;
+      transform: translateX(-50%);
+    }
+
+    /* Logo badge centred on divider */
+    .center-badge {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      background: #fff;
+      border-radius: 50%;
+      width: 72px; height: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 0 0 8px rgba(255,255,255,0.08),
+        0 0 0 18px rgba(255,255,255,0.04),
+        0 8px 40px rgba(0,0,0,0.35);
+      animation: badgePop 0.8s 0.65s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    .center-badge span { font-size: 26px; line-height: 1; }
+    .center-badge small {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.4rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      color: var(--ink);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    @keyframes badgePop {
+      from { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+      to   { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+    }
+
+    /* ═══════════════════════════════
+       SHARED PANEL BASE
+    ═══════════════════════════════ */
+    .panel {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 52px 60px;
+      cursor: pointer;
+      transition: flex 0.55s cubic-bezier(0.77,0,0.175,1);
+      text-decoration: none;
+    }
+
+    .panel:hover { flex: 1.2; }
+
+    /* ═══════════════════════════════
+       LEFT — PATIENT (dark)
+    ═══════════════════════════════ */
+    .panel-patient {
+      background: var(--patient-bg);
+      color: var(--white);
+    }
+
+    .panel-patient::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(230,57,70,0.18) 0%, transparent 65%);
+      top: -220px; left: -220px;
+      animation: floatA 9s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    .panel-patient::after {
+      content: '';
+      position: absolute;
+      width: 420px; height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(230,57,70,0.09) 0%, transparent 65%);
+      bottom: -100px; right: 30px;
+      animation: floatB 13s ease-in-out infinite alternate-reverse;
+      pointer-events: none;
+    }
+
+    @keyframes floatA {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(50px,30px) scale(1.08); }
+    }
+
+    @keyframes floatB {
+      from { transform: translate(0,0); }
+      to   { transform: translate(-30px,-40px); }
+    }
+
+    /* Grid overlay */
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 56px 56px;
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════
+       RIGHT — DOCTOR (light)
+    ═══════════════════════════════ */
+    .panel-doctor {
+      background: var(--doctor-bg);
+      color: var(--ink);
+    }
+
+    .panel-doctor .grid {
+      background-image:
+        linear-gradient(rgba(13,27,42,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(13,27,42,0.045) 1px, transparent 1px);
+      background-size: 56px 56px;
+    }
+
+    .panel-doctor::before {
+      content: '';
+      position: absolute;
+      width: 620px; height: 620px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,150,199,0.1) 0%, transparent 65%);
+      top: -160px; right: -160px;
+      animation: floatA 11s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    .panel-doctor::after {
+      content: '';
+      position: absolute;
+      width: 380px; height: 380px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,150,199,0.07) 0%, transparent 65%);
+      bottom: -90px; left: 50px;
+      animation: floatB 9s ease-in-out infinite alternate-reverse;
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════
+       CONTENT INSIDE PANELS
+    ═══════════════════════════════ */
+    .panel-content { position: relative; z-index: 2; }
+
+    /* Role tag */
+    .role-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 30px;
+    }
+
+    .panel-patient .role-tag {
+      background: var(--patient-dim);
+      color: #ff8a93;
+      border: 1px solid rgba(230,57,70,0.25);
+    }
+
+    .panel-doctor .role-tag {
+      background: var(--doctor-dim);
+      color: var(--doctor-teal);
+      border: 1px solid rgba(0,150,199,0.2);
+    }
+
+    .role-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      animation: pulseDot 1.6s ease-in-out infinite;
+    }
+
+    .panel-patient .role-dot { background: #ff8a93; }
+    .panel-doctor  .role-dot { background: var(--doctor-teal); }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.35; transform: scale(0.55); }
+    }
+
+    /* Big heading */
+    .panel-title {
+      font-family: 'Bebas Neue', cursive;
+      font-size: clamp(3.6rem, 5.5vw, 6.2rem);
+      line-height: 0.9;
+      letter-spacing: 0.03em;
+      margin-bottom: 22px;
+    }
+
+    .panel-patient .panel-title { color: var(--white); }
+    .panel-doctor  .panel-title { color: var(--ink); }
+
+    .accent-line { display: block; }
+    .panel-patient .accent-line { color: var(--patient-acc); }
+    .panel-doctor  .accent-line { color: var(--doctor-teal); }
+
+    /* Description */
+    .panel-desc {
+      font-size: 0.87rem;
+      font-weight: 300;
+      line-height: 1.8;
+      max-width: 310px;
+      margin-bottom: 32px;
+    }
+
+    .panel-patient .panel-desc { color: var(--white-60); }
+    .panel-doctor  .panel-desc { color: var(--ink-50); }
+
+    /* Feature list */
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.81rem;
+      font-weight: 400;
+    }
+
+    .panel-patient .feature-item { color: var(--white-60); }
+    .panel-doctor  .feature-item { color: var(--ink-50); }
+
+    .feature-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      flex-shrink: 0;
+    }
+
+    .panel-patient .feature-icon {
+      background: var(--patient-dim);
+      border: 1px solid rgba(230,57,70,0.18);
+    }
+
+    .panel-doctor .feature-icon {
+      background: var(--doctor-dim);
+      border: 1px solid rgba(0,150,199,0.15);
+    }
+
+    /* CTA Button */
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 30px;
+      border-radius: 13px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.93rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, gap 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.15);
+      transform: translateX(-110%) skewX(-12deg);
+      transition: transform 0.4s ease;
+    }
+
+    .cta-btn:hover::before { transform: translateX(110%) skewX(-12deg); }
+    .cta-btn:hover          { transform: translateY(-3px); gap: 18px; }
+
+    .panel-patient .cta-btn {
+      background: var(--patient-acc);
+      color: #fff;
+      box-shadow: 0 4px 22px var(--patient-glow);
+    }
+    .panel-patient .cta-btn:hover { box-shadow: 0 10px 34px var(--patient-glow); }
+
+    .panel-doctor .cta-btn {
+      background: var(--doctor-teal);
+      color: #fff;
+      box-shadow: 0 4px 22px var(--doctor-glow);
+    }
+    .panel-doctor .cta-btn:hover  { box-shadow: 0 10px 34px var(--doctor-glow); }
+
+    .cta-arrow { font-size: 1.1rem; transition: transform 0.25s ease; }
+    .cta-btn:hover .cta-arrow { transform: translateX(4px); }
+
+    /* ═══════════════════════════════
+       BOTTOM
+    ═══════════════════════════════ */
+    .panel-bottom { position: relative; z-index: 2; }
+
+    .sec-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.67rem;
+      padding: 7px 13px;
+      border-radius: 8px;
+    }
+
+    .panel-patient .sec-badge {
+      background: var(--white-06);
+      border: 1px solid var(--white-12);
+      color: var(--white-60);
+    }
+
+    .panel-doctor .sec-badge {
+      background: var(--ink-08);
+      border: 1px solid rgba(13,27,42,0.1);
+      color: var(--ink-50);
+    }
+
+    /* ═══════════════════════════════
+       TOP APP NAME
+    ═══════════════════════════════ */
+    .top-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px 0;
+      pointer-events: none;
+    }
+
+    .app-name {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 0.9rem;
+      letter-spacing: 0.26em;
+      color: rgba(255,255,255,0.6);
+      text-shadow: 0 1px 10px rgba(0,0,0,0.6);
+      animation: fadeDown 0.7s 0.3s ease both;
+    }
+
+    /* ═══════════════════════════════
+       ROLE HINT
+    ═══════════════════════════════ */
+    .role-hint {
+      position: absolute;
+      bottom: 44px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: hintFloat 2.2s 1.8s ease-in-out infinite, fadeUp 0.8s 1.2s ease both;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .hint-line {
+      width: 28px; height: 1px;
+      background: rgba(255,255,255,0.28);
+    }
+
+    .hint-text {
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.38);
+      font-weight: 500;
+    }
+
+    @keyframes hintFloat {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    /* ═══════════════════════════════
+       STAGGER ENTRY ANIMATIONS
+    ═══════════════════════════════ */
+    .panel-patient .role-tag     { animation: slideLeft  0.65s 0.15s ease both; }
+    .panel-patient .panel-title  { animation: slideLeft  0.65s 0.25s ease both; }
+    .panel-patient .panel-desc   { animation: slideLeft  0.65s 0.33s ease both; }
+    .panel-patient .feature-list { animation: slideLeft  0.65s 0.4s  ease both; }
+    .panel-patient .cta-btn      { animation: slideLeft  0.65s 0.48s ease both; }
+    .panel-patient .panel-bottom { animation: slideLeft  0.65s 0.56s ease both; }
+
+    .panel-doctor .role-tag      { animation: slideRight 0.65s 0.2s  ease both; }
+    .panel-doctor .panel-title   { animation: slideRight 0.65s 0.3s  ease both; }
+    .panel-doctor .panel-desc    { animation: slideRight 0.65s 0.37s ease both; }
+    .panel-doctor .feature-list  { animation: slideRight 0.65s 0.44s ease both; }
+    .panel-doctor .cta-btn       { animation: slideRight 0.65s 0.52s ease both; }
+    .panel-doctor .panel-bottom  { animation: slideRight 0.65s 0.6s  ease both; }
+
+    @keyframes slideLeft {
+      from { opacity: 0; transform: translateX(-22px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideRight {
+      from { opacity: 0; transform: translateX(22px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ═══════════════════════════════
+       MOBILE — stack vertically
+    ═══════════════════════════════ */
+    @media (max-width: 768px) {
+      html, body { overflow: auto; }
+
+      .gateway {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .panel {
+        flex: none !important;
+        min-height: 52vh;
+        padding: 48px 28px;
+        transition: none;
+      }
+
+      .divider {
+        top: 50%; bottom: auto;
+        left: 0; right: 0;
+        width: 100%; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+        transform: none;
+      }
+
+      .center-badge {
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .panel-title { font-size: clamp(3rem, 11vw, 4.5rem); }
+      .top-bar, .role-hint { display: none; }
+    }
+
+    @media (max-width: 440px) {
+      .panel { padding: 40px 22px; }
+      .feature-list { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- App name -->
+<div class="top-bar">
+  <div class="app-name">SecureHealth QR</div>
+</div>
+
+<!-- Divider + centre badge -->
+<div class="divider"></div>
+<div class="center-badge">
+  <span>🏥</span>
+  <small>SHQ</small>
+</div>
+
+<!-- Hint -->
+<div class="role-hint">
+  <div class="hint-line"></div>
+  <div class="hint-text">Choose your role</div>
+  <div class="hint-line"></div>
+</div>
+
+<div class="gateway">
+
+  <!-- ══════ LEFT — PATIENT ══════ -->
+  <a class="panel panel-patient" href="patient.html">
+    <div class="grid"></div>
+
+    <div class="panel-content">
+      <div class="role-tag">
+        <div class="role-dot"></div>
+        I am a Patient
+      </div>
+
+      <div class="panel-title">
+        CREATE<br/>
+        MY<br/>
+        <span class="accent-line">PROFILE</span>
+      </div>
+
+      <p class="panel-desc">
+        Build your encrypted health identity once. Carry it everywhere as a QR code — on your phone or wallet card.
+      </p>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon">🔒</div>
+          AES-256 encrypted profile
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📲</div>
+          QR code on phone or wallet card
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">💊</div>
+          Allergies, medications & conditions
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">💚</div>
+          Organ donation consent stored
+        </div>
+      </div>
+
+      <div class="cta-btn">
+        Get started
+        <span class="cta-arrow">→</span>
+      </div>
+    </div>
+
+    <div class="panel-bottom">
+      <div class="sec-badge">🕒 ~3 min setup · one-time only</div>
+    </div>
+  </a>
+
+  <!-- ══════ RIGHT — DOCTOR ══════ -->
+  <a class="panel panel-doctor" href="scanner.html">
+    <div class="grid"></div>
+
+    <div class="panel-content">
+      <div class="role-tag">
+        <div class="role-dot"></div>
+        I am a Doctor
+      </div>
+
+      <div class="panel-title">
+        SCAN<br/>
+        PATIENT<br/>
+        <span class="accent-line">QR CODE</span>
+      </div>
+
+      <p class="panel-desc">
+        Point your camera at any SecureHealth QR. Get instant critical data with an AI-powered emergency summary.
+      </p>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon">📷</div>
+          Scan QR in under 3 seconds
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🤖</div>
+          AI emergency summary
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">⚠️</div>
+          Drug-allergy conflict checker
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📞</div>
+          One-tap emergency contact
+        </div>
+      </div>
+
+      <div class="cta-btn">
+        Open scanner
+        <span class="cta-arrow">→</span>
+      </div>
+    </div>
+
+    <div class="panel-bottom">
+      <div class="sec-badge">⚡ No install needed · works offline</div>
+    </div>
+  </a>
+
+</div>
+</body>
+</html>

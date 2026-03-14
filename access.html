@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureHealth QR — Access Profile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <!-- CryptoJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #080e17;
+      --bg-card:      #0d1620;
+      --bg-elevated:  #111d2b;
+      --border:       rgba(255,255,255,0.07);
+      --border-focus: rgba(255,255,255,0.18);
+      --white:        #eef2f7;
+      --white-dim:    rgba(238,242,247,0.5);
+      --white-faint:  rgba(238,242,247,0.06);
+      --red:          #e63946;
+      --red-soft:     rgba(230,57,70,0.15);
+      --red-glow:     rgba(230,57,70,0.25);
+      --amber:        #f4a261;
+      --amber-soft:   rgba(244,162,97,0.12);
+      --green:        #2ec4b6;
+      --green-soft:   rgba(46,196,182,0.12);
+      --blue:         #4895ef;
+      --blue-soft:    rgba(72,149,239,0.12);
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* animated mesh background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 55% 45% at 20% 20%, rgba(72,149,239,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 45% 55% at 80% 80%, rgba(230,57,70,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 50% 50%, rgba(8,14,23,0.95) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* scanline texture */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.012) 2px,
+        rgba(255,255,255,0.012) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 22px 36px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      animation: fadeDown 0.5s ease both;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--white-dim);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 400;
+      transition: color 0.2s;
+      padding: 6px 0;
+    }
+    .back-btn:hover { color: var(--white); }
+    .back-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .header-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+    }
+
+    .header-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .header-title span { color: var(--red); }
+
+    /* ── Main layout ── */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .access-container {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* ── Public data preview (top card) ── */
+    .public-preview {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+
+    .preview-label {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--white-dim);
+      margin-bottom: 14px;
+    }
+
+    .preview-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .chip-blood {
+      background: var(--red-soft);
+      color: #ff8a93;
+      border: 1px solid rgba(230,57,70,0.2);
+    }
+
+    .chip-allergy {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border: 1px solid rgba(244,162,97,0.2);
+    }
+
+    .chip-donor {
+      background: var(--green-soft);
+      color: var(--green);
+      border: 1px solid rgba(46,196,182,0.2);
+    }
+
+    /* ── Main access card ── */
+    .access-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      animation: fadeUp 0.5s 0.2s ease both;
+    }
+
+    /* ── Tab switcher ── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 18px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--white-dim);
+      transition: color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+    }
+
+    .tab::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--blue);
+      transform: scaleX(0);
+      transition: transform 0.25s ease;
+    }
+
+    .tab.active {
+      color: var(--white);
+      background: var(--white-faint);
+    }
+
+    .tab.active::after { transform: scaleX(1); }
+
+    .tab-icon { font-size: 1rem; }
+
+    /* ── Panel content ── */
+    .panel {
+      padding: 32px 28px;
+      display: none;
+    }
+
+    .panel.active { display: block; }
+
+    .panel-heading {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-sub {
+      font-size: 0.83rem;
+      color: var(--white-dim);
+      font-weight: 300;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    /* ── PIN dots input ── */
+    .pin-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--white-dim);
+      margin-bottom: 14px;
+    }
+
+    .pin-dots {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .pin-dot {
+      width: 48px;
+      height: 58px;
+      background: var(--bg-elevated);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 1.4rem;
+      color: var(--white);
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      position: relative;
+    }
+
+    .pin-dot.filled {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+    }
+
+    .pin-dot.filled::after {
+      content: '●';
+      font-size: 1rem;
+      color: var(--blue);
+    }
+
+    .pin-dot.active-cursor {
+      border-color: var(--white-dim);
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { border-color: var(--white-dim); }
+      50%       { border-color: transparent; }
+    }
+
+    .pin-dot.error {
+      border-color: var(--red) !important;
+      background: var(--red-soft) !important;
+      animation: shake 0.35s ease both;
+    }
+
+    .pin-dot.error::after {
+      color: var(--red) !important;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+
+    /* Hidden real input */
+    .pin-real-input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+    }
+
+    /* ── Numpad ── */
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .num-btn {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: var(--white);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .num-btn:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: var(--border-focus);
+    }
+
+    .num-btn:active {
+      transform: scale(0.94);
+      background: var(--blue-soft);
+    }
+
+    .num-btn.del {
+      font-size: 1rem;
+      color: var(--white-dim);
+    }
+
+    .num-btn.zero { grid-column: 2; }
+
+    /* ── Override code input ── */
+    .override-group {
+      margin-bottom: 24px;
+    }
+
+    .override-format {
+      font-size: 0.72rem;
+      color: var(--white-dim);
+      margin-bottom: 10px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .override-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .override-prefix {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--amber);
+      font-weight: 500;
+      background: var(--amber-soft);
+      border: 1px solid rgba(244,162,97,0.2);
+      padding: 14px 12px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+
+    .override-sep {
+      color: var(--white-dim);
+      font-family: 'DM Mono', monospace;
+      font-size: 1.2rem;
+    }
+
+    .override-part {
+      flex: 1;
+      background: var(--bg-elevated);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--white);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      max-width: 80px;
+    }
+
+    .override-part:focus {
+      border-color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .override-part.error {
+      border-color: var(--red);
+      background: var(--red-soft);
+      animation: shake 0.35s ease both;
+    }
+
+    /* ── Unlock button ── */
+    .unlock-btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+      letter-spacing: 0.01em;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .unlock-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.1);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+
+    .unlock-btn:hover::before { transform: translateX(100%); }
+
+    .unlock-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+    }
+
+    .unlock-btn:active { transform: translateY(0); }
+
+    .unlock-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-pin {
+      background: linear-gradient(135deg, var(--blue), #3a7bd5);
+      color: white;
+      box-shadow: 0 4px 20px rgba(72,149,239,0.3);
+    }
+
+    .btn-override {
+      background: linear-gradient(135deg, var(--amber), #e08c50);
+      color: #1a0e00;
+      box-shadow: 0 4px 20px rgba(244,162,97,0.3);
+    }
+
+    /* ── Status messages ── */
+    .status-msg {
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.83rem;
+      font-weight: 400;
+      line-height: 1.5;
+      display: none;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .status-msg.error {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--red-soft);
+      border: 1px solid rgba(230,57,70,0.25);
+      color: #ff8a93;
+    }
+
+    .status-msg.success {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--green-soft);
+      border: 1px solid rgba(46,196,182,0.25);
+      color: var(--green);
+    }
+
+    .status-msg.locked {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--white-dim);
+    }
+
+    .status-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Attempt counter ── */
+    .attempt-track {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .attempt-label {
+      font-size: 0.72rem;
+      color: var(--white-dim);
+      letter-spacing: 0.04em;
+    }
+
+    .attempt-dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .attempt-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+
+    .attempt-dot.used { background: var(--red); }
+
+    /* ── Divider ── */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      font-size: 0.75rem;
+      color: var(--white-dim);
+    }
+
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Security note ── */
+    .security-note {
+      background: var(--white-faint);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: var(--white-dim);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5;
+      animation: fadeUp 0.5s 0.35s ease both;
+    }
+
+    .security-icon { font-size: 0.9rem; flex-shrink: 0; }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Lockout overlay ── */
+    .lockout-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(8,14,23,0.92);
+      border-radius: 20px;
+      z-index: 10;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .lockout-overlay.visible { display: flex; }
+
+    .lockout-icon {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+
+    .lockout-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--red);
+    }
+
+    .lockout-msg {
+      font-size: 0.85rem;
+      color: var(--white-dim);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .lockout-timer {
+      font-family: 'DM Mono', monospace;
+      font-size: 2rem;
+      font-weight: 500;
+      color: var(--white);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0);     }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 520px) {
+      header { padding: 18px 20px; }
+      main { padding: 24px 16px; }
+      .panel { padding: 24px 20px; }
+      .pin-dots { gap: 7px; }
+      .pin-dot { width: 42px; height: 52px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <a class="back-btn" href="scanner.html">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </a>
+    <div class="header-divider"></div>
+    <div class="header-title">Secure<span>Health</span> QR — Access Profile</div>
+  </header>
+
+  <main>
+    <div class="access-container">
+
+      <!-- Public data preview -->
+      <div class="public-preview" id="publicPreview">
+        <div class="preview-label">⚡ Instantly visible — no PIN required</div>
+        <div class="preview-chips">
+          <div class="chip chip-blood" id="chipBlood">🩸 —</div>
+          <div class="chip chip-allergy" id="chipAllergy">⚠️ Checking...</div>
+          <div class="chip chip-donor"  id="chipDonor">💚 —</div>
+        </div>
+      </div>
+
+      <!-- Access card -->
+      <div class="access-card" style="position:relative;">
+
+        <!-- Lockout overlay -->
+        <div class="lockout-overlay" id="lockoutOverlay">
+          <div class="lockout-icon">🔒</div>
+          <div class="lockout-title">Access Locked</div>
+          <div class="lockout-msg">Too many failed attempts.<br/>Please wait before trying again.</div>
+          <div class="lockout-timer" id="lockoutTimer">10:00</div>
+        </div>
+
+        <!-- Tab switcher -->
+        <div class="tabs">
+          <button class="tab active" id="tabPin" onclick="switchTab('pin')">
+            <span class="tab-icon">🔑</span> Personal PIN
+          </button>
+          <button class="tab" id="tabOverride" onclick="switchTab('override')">
+            <span class="tab-icon">🆘</span> Override Code
+          </button>
+        </div>
+
+        <!-- PIN panel -->
+        <div class="panel active" id="panelPin">
+          <div class="panel-heading">Enter Patient PIN</div>
+          <div class="panel-sub">Ask the patient for their 4–6 digit personal PIN to decrypt the full medical profile.</div>
+
+          <div class="pin-label">PIN Code</div>
+
+          <!-- PIN dot display -->
+          <div class="pin-dots" id="pinDots">
+            <div class="pin-dot active-cursor" id="dot0"></div>
+            <div class="pin-dot" id="dot1"></div>
+            <div class="pin-dot" id="dot2"></div>
+            <div class="pin-dot" id="dot3"></div>
+            <div class="pin-dot" id="dot4"></div>
+            <div class="pin-dot" id="dot5"></div>
+          </div>
+
+          <!-- Hidden real input -->
+          <input type="tel" id="pinRealInput" class="pin-real-input"
+            maxlength="6" inputmode="numeric" autocomplete="off"/>
+
+          <!-- Numpad -->
+          <div class="numpad">
+            <button class="num-btn" onclick="numPress('1')">1</button>
+            <button class="num-btn" onclick="numPress('2')">2</button>
+            <button class="num-btn" onclick="numPress('3')">3</button>
+            <button class="num-btn" onclick="numPress('4')">4</button>
+            <button class="num-btn" onclick="numPress('5')">5</button>
+            <button class="num-btn" onclick="numPress('6')">6</button>
+            <button class="num-btn" onclick="numPress('7')">7</button>
+            <button class="num-btn" onclick="numPress('8')">8</button>
+            <button class="num-btn" onclick="numPress('9')">9</button>
+            <button class="num-btn zero" onclick="numPress('0')">0</button>
+            <button class="num-btn del" onclick="numDelete()">⌫</button>
+          </div>
+
+          <button class="unlock-btn btn-pin" id="pinUnlockBtn" onclick="attemptPIN()">
+            <span class="spinner" id="pinSpinner"></span>
+            <span id="pinBtnText">🔓 Unlock with PIN</span>
+          </button>
+
+          <div class="status-msg" id="pinStatus"></div>
+
+          <div class="attempt-track">
+            <span class="attempt-label">Attempts:</span>
+            <div class="attempt-dots">
+              <div class="attempt-dot" id="ad0"></div>
+              <div class="attempt-dot" id="ad1"></div>
+              <div class="attempt-dot" id="ad2"></div>
+              <div class="attempt-dot" id="ad3"></div>
+              <div class="attempt-dot" id="ad4"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Override panel -->
+        <div class="panel" id="panelOverride">
+          <div class="panel-heading">Emergency Override</div>
+          <div class="panel-sub">Use the patient's emergency override code. This grants read-only access and is logged with a timestamp.</div>
+
+          <div class="pin-label">Override Code Format: EMR-XXXX-XXXX</div>
+
+          <div class="override-group">
+            <div class="override-format">Enter the 4-character segments below</div>
+            <div class="override-input-row">
+              <div class="override-prefix">EMR</div>
+              <div class="override-sep">-</div>
+              <input
+                class="override-part"
+                id="overridePart1"
+                type="text"
+                maxlength="4"
+                placeholder="XXXX"
+                autocomplete="off"
+                spellcheck="false"
+                oninput="overrideInput(this, 'overridePart2')"
+              />
+              <div class="override-sep">-</div>
+              <input
+                class="override-part"
+                id="overridePart2"
+                type="text"
+                maxlength="4"
+                placeholder="XXXX"
+                autocomplete="off"
+                spellcheck="false"
+                oninput="overrideInput(this, null)"
+              />
+            </div>
+          </div>
+
+          <button class="unlock-btn btn-override" id="overrideUnlockBtn" onclick="attemptOverride()">
+            <span class="spinner" id="overrideSpinner"></span>
+            <span id="overrideBtnText">🆘 Unlock with Override Code</span>
+          </button>
+
+          <div class="status-msg" id="overrideStatus"></div>
+
+          <div class="or-divider">read-only access · access will be logged</div>
+
+          <div class="attempt-track">
+            <span class="attempt-label">Attempts:</span>
+            <div class="attempt-dots">
+              <div class="attempt-dot" id="ado0"></div>
+              <div class="attempt-dot" id="ado1"></div>
+              <div class="attempt-dot" id="ado2"></div>
+              <div class="attempt-dot" id="ado3"></div>
+              <div class="attempt-dot" id="ado4"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /access-card -->
+
+      <!-- Security note -->
+      <div class="security-note">
+        <span class="security-icon">🛡️</span>
+        <span>All decryption happens locally on this device. No data is transmitted to any server. Every access is logged with a timestamp for patient audit review.</span>
+      </div>
+
+    </div>
+  </main>
+
+</div><!-- /wrapper -->
+
+<script>
+  // ── State ──
+  let pinValue       = '';
+  let pinAttempts    = 0;
+  let overrideAttempts = 0;
+  const MAX_ATTEMPTS = 5;
+  const LOCKOUT_MS   = 10 * 60 * 1000; // 10 minutes
+  let lockoutInterval = null;
+  let scannedPayload  = null;
+
+  // ── Init ──
+  window.onload = () => {
+    loadPayload();
+    checkLockout();
+    document.getElementById('pinRealInput').addEventListener('input', syncPinFromInput);
+  };
+
+  // Load scanned QR payload from sessionStorage
+  function loadPayload() {
+    const raw = sessionStorage.getItem('scannedPayload');
+    if (!raw) {
+      // Demo mode — create a sample payload so the page works standalone
+      const demoPrivate = {
+        name: 'Ravi Kumar',
+        dob: '1985-01-12',
+        gender: 'Male',
+        allergies: ['Penicillin', 'Peanuts'],
+        medications: ['Metformin 500mg'],
+        conditions: ['Type 2 Diabetes'],
+        emergencyContact: { name: 'Priya Kumar', phone: '9876543210', relation: 'Spouse' },
+        organDonation: { isDonor: true, organs: ['Kidney', 'Corneas'] }
+      };
+      const demoPin = '1234';
+      const demoOverride = 'EMR-TEST-DEMO';
+      const payload = {
+        version: '1.0',
+        public: { bloodType: 'O−', hasAllergies: true, isDonor: true, emergencyPhone: '9876543210' },
+        pinLocked:      CryptoJS.AES.encrypt(JSON.stringify(demoPrivate), demoPin).toString(),
+        overrideLocked: CryptoJS.AES.encrypt(JSON.stringify(demoPrivate), demoOverride).toString(),
+        createdAt: new Date().toISOString()
+      };
+      scannedPayload = payload;
+      sessionStorage.setItem('scannedPayload', JSON.stringify(payload));
+      showDemoBanner();
+    } else {
+      scannedPayload = JSON.parse(raw);
+    }
+    renderPublicData(scannedPayload.public);
+  }
+
+  function renderPublicData(pub) {
+    document.getElementById('chipBlood').textContent   = '🩸 ' + (pub.bloodType || 'Unknown');
+    document.getElementById('chipAllergy').textContent = pub.hasAllergies ? '⚠️ Has Allergies' : '✅ No Allergies';
+    document.getElementById('chipDonor').textContent   = pub.isDonor ? '💚 Organ Donor' : '❌ Not a Donor';
+  }
+
+  function showDemoBanner() {
+    const b = document.createElement('div');
+    b.style.cssText = 'background:rgba(244,162,97,0.1);border:1px solid rgba(244,162,97,0.25);border-radius:10px;padding:10px 14px;font-size:0.75rem;color:#f4a261;margin-bottom:14px;';
+    b.textContent = '🎭 Demo mode — use PIN: 1234  or  Override: EMR-TEST-DEMO';
+    document.querySelector('.access-container').insertBefore(b, document.querySelector('.public-preview'));
+  }
+
+  // ── Tab switching ──
+  function switchTab(tab) {
+    document.getElementById('tabPin').classList.toggle('active', tab === 'pin');
+    document.getElementById('tabOverride').classList.toggle('active', tab === 'override');
+    document.getElementById('panelPin').classList.toggle('active', tab === 'pin');
+    document.getElementById('panelOverride').classList.toggle('active', tab === 'override');
+    clearStatus();
+  }
+
+  // ── PIN numpad ──
+  function numPress(digit) {
+    if (pinValue.length >= 6) return;
+    pinValue += digit;
+    renderPinDots();
+  }
+
+  function numDelete() {
+    if (!pinValue.length) return;
+    pinValue = pinValue.slice(0, -1);
+    renderPinDots();
+  }
+
+  function syncPinFromInput(e) {
+    pinValue = e.target.value.replace(/\D/g, '').slice(0, 6);
+    renderPinDots();
+  }
+
+  function renderPinDots() {
+    for (let i = 0; i < 6; i++) {
+      const dot = document.getElementById('dot' + i);
+      dot.classList.remove('filled', 'active-cursor', 'error');
+      if (i < pinValue.length) {
+        dot.classList.add('filled');
+      } else if (i === pinValue.length) {
+        dot.classList.add('active-cursor');
+      }
+    }
+    document.getElementById('pinRealInput').value = pinValue;
+    clearStatus('pin');
+  }
+
+  // ── Override auto-advance ──
+  function overrideInput(el, nextId) {
+    el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    el.classList.remove('error');
+    if (el.value.length === 4 && nextId) {
+      document.getElementById(nextId).focus();
+    }
+    clearStatus('override');
+  }
+
+  // ── Lockout ──
+  function checkLockout() {
+    const until = localStorage.getItem('shqr_lockout');
+    if (!until) return;
+    const remaining = parseInt(until) - Date.now();
+    if (remaining > 0) {
+      showLockout(remaining);
+    } else {
+      localStorage.removeItem('shqr_lockout');
+      pinAttempts = 0;
+      overrideAttempts = 0;
+    }
+  }
+
+  function triggerLockout() {
+    const until = Date.now() + LOCKOUT_MS;
+    localStorage.setItem('shqr_lockout', until.toString());
+    showLockout(LOCKOUT_MS);
+  }
+
+  function showLockout(ms) {
+    const overlay = document.getElementById('lockoutOverlay');
+    overlay.classList.add('visible');
+    updateTimer(ms);
+    lockoutInterval = setInterval(() => {
+      const until = parseInt(localStorage.getItem('shqr_lockout') || '0');
+      const rem   = until - Date.now();
+      if (rem <= 0) {
+        clearInterval(lockoutInterval);
+        overlay.classList.remove('visible');
+        localStorage.removeItem('shqr_lockout');
+        pinAttempts = 0;
+        overrideAttempts = 0;
+        resetAttemptDots();
+      } else {
+        updateTimer(rem);
+      }
+    }, 1000);
+  }
+
+  function updateTimer(ms) {
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    document.getElementById('lockoutTimer').textContent =
+      String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+
+  // ── Decryption attempt — PIN ──
+  function attemptPIN() {
+    if (pinValue.length < 4) {
+      showStatus('pin', 'error', '⚠️', 'PIN must be at least 4 digits.');
+      return;
+    }
+    if (isLockedOut()) return;
+
+    setLoading('pin', true);
+
+    setTimeout(() => {  // small delay for UX realism
+      const result = decryptWith(scannedPayload.pinLocked, pinValue);
+      setLoading('pin', false);
+
+      if (result) {
+        showStatus('pin', 'success', '✅', 'Profile unlocked successfully! Redirecting...');
+        logAccess('pin');
+        sessionStorage.setItem('decryptedData', JSON.stringify(result));
+        sessionStorage.setItem('accessMethod', 'pin');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 900);
+      } else {
+        pinAttempts++;
+        markAttemptDot(pinAttempts - 1, 'pin');
+        shakeDots();
+
+        if (pinAttempts >= MAX_ATTEMPTS) {
+          triggerLockout();
+        } else {
+          const left = MAX_ATTEMPTS - pinAttempts;
+          showStatus('pin', 'error', '🔒', `Decryption failed. ${left} attempt${left === 1 ? '' : 's'} remaining.`);
+        }
+        pinValue = '';
+        renderPinDots();
+      }
+    }, 400);
+  }
+
+  // ── Decryption attempt — Override ──
+  function attemptOverride() {
+    const p1 = document.getElementById('overridePart1').value.trim().toUpperCase();
+    const p2 = document.getElementById('overridePart2').value.trim().toUpperCase();
+
+    if (p1.length < 4 || p2.length < 4) {
+      showStatus('override', 'error', '⚠️', 'Enter both 4-character segments of the override code.');
+      return;
+    }
+    if (isLockedOut()) return;
+
+    const code = `EMR-${p1}-${p2}`;
+    setLoading('override', true);
+
+    setTimeout(() => {
+      const result = decryptWith(scannedPayload.overrideLocked, code);
+      setLoading('override', false);
+
+      if (result) {
+        showStatus('override', 'success', '✅', 'Override accepted. Read-only access granted. Redirecting...');
+        logAccess('override');
+        sessionStorage.setItem('decryptedData', JSON.stringify(result));
+        sessionStorage.setItem('accessMethod', 'override');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 900);
+      } else {
+        overrideAttempts++;
+        markAttemptDot(overrideAttempts - 1, 'override');
+        document.getElementById('overridePart1').classList.add('error');
+        document.getElementById('overridePart2').classList.add('error');
+
+        if (overrideAttempts >= MAX_ATTEMPTS) {
+          triggerLockout();
+        } else {
+          const left = MAX_ATTEMPTS - overrideAttempts;
+          showStatus('override', 'error', '🔒', `Decryption failed — code incorrect. ${left} attempt${left === 1 ? '' : 's'} remaining.`);
+        }
+      }
+    }, 400);
+  }
+
+  // ── Core decrypt ──
+  function decryptWith(encrypted, key) {
+    try {
+      const bytes = CryptoJS.AES.decrypt(encrypted, key);
+      const text  = bytes.toString(CryptoJS.enc.Utf8);
+      if (!text) return null;
+      return JSON.parse(text);
+    } catch(e) {
+      return null;
+    }
+  }
+
+  // ── Access log ──
+  function logAccess(method) {
+    const logs = JSON.parse(localStorage.getItem('shqr_accessLogs') || '[]');
+    logs.push({
+      timestamp: new Date().toISOString(),
+      method,
+      device: navigator.userAgent.substring(0, 80)
+    });
+    localStorage.setItem('shqr_accessLogs', JSON.stringify(logs));
+  }
+
+  // ── UI helpers ──
+  function isLockedOut() {
+    const until = localStorage.getItem('shqr_lockout');
+    return until && Date.now() < parseInt(until);
+  }
+
+  function setLoading(type, loading) {
+    const spinner = document.getElementById(type + 'Spinner');
+    const text    = document.getElementById(type + 'BtnText');
+    const btn     = document.getElementById(type + 'UnlockBtn');
+    spinner.style.display = loading ? 'block' : 'none';
+    btn.disabled = loading;
+    text.style.opacity = loading ? '0.5' : '1';
+  }
+
+  function showStatus(type, kind, icon, msg) {
+    const el = document.getElementById(type + 'Status');
+    el.className = 'status-msg ' + kind;
+    el.innerHTML = `<span class="status-icon">${icon}</span><span>${msg}</span>`;
+  }
+
+  function clearStatus(type) {
+    if (!type || type === 'pin') {
+      const el = document.getElementById('pinStatus');
+      if (el) el.className = 'status-msg';
+    }
+    if (!type || type === 'override') {
+      const el = document.getElementById('overrideStatus');
+      if (el) el.className = 'status-msg';
+    }
+  }
+
+  function markAttemptDot(index, type) {
+    const prefix = type === 'pin' ? 'ad' : 'ado';
+    const dot = document.getElementById(prefix + index);
+    if (dot) dot.classList.add('used');
+  }
+
+  function resetAttemptDots() {
+    for (let i = 0; i < 5; i++) {
+      const d1 = document.getElementById('ad'  + i);
+      const d2 = document.getElementById('ado' + i);
+      if (d1) d1.classList.remove('used');
+      if (d2) d2.classList.remove('used');
+    }
+  }
+
+  function shakeDots() {
+    document.querySelectorAll('.pin-dot.filled').forEach(d => {
+      d.classList.add('error');
+      setTimeout(() => d.classList.remove('error'), 400);
+    });
+  }
+
+  // Keyboard support for PIN
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('panelPin').classList.contains('active')) {
+      if (e.key >= '0' && e.key <= '9') numPress(e.key);
+      if (e.key === 'Backspace') numDelete();
+      if (e.key === 'Enter') attemptPIN();
+    }
+  });
+</script>
+
+</body>
+</html>
