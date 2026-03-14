@@ -916,13 +916,17 @@
     } else {
       scannedPayload = JSON.parse(raw);
     }
-    renderPublicData(scannedPayload.public);
+    renderPublicData(scannedPayload.p ?? scannedPayload.public ?? {});
   }
 
   function renderPublicData(pub) {
-    document.getElementById('chipBlood').textContent   = '🩸 ' + (pub.bloodType || 'Unknown');
-    document.getElementById('chipAllergy').textContent = pub.hasAllergies ? '⚠️ Has Allergies' : '✅ No Allergies';
-    document.getElementById('chipDonor').textContent   = pub.isDonor ? '💚 Organ Donor' : '❌ Not a Donor';
+    // Support compact keys (b,a,d,e) and full keys (bloodType,hasAllergies,isDonor,emergencyPhone)
+    const bloodType  = pub.b ?? pub.bloodType    ?? 'Unknown';
+    const hasAllergy = pub.a ?? pub.hasAllergies ?? false;
+    const isDonor    = pub.d ?? pub.isDonor      ?? false;
+    document.getElementById('chipBlood').textContent   = '🩸 ' + bloodType;
+    document.getElementById('chipAllergy').textContent = hasAllergy ? '⚠️ Has Allergies' : '✅ No Allergies';
+    document.getElementById('chipDonor').textContent   = isDonor   ? '💚 Organ Donor'   : '❌ Not a Donor';
   }
 
   function showDemoBanner() {
@@ -1041,7 +1045,7 @@
     setLoading('pin', true);
 
     setTimeout(() => {  // small delay for UX realism
-      const result = decryptWith(scannedPayload.pinLocked, pinValue);
+      const result = decryptWith(scannedPayload.pk ?? scannedPayload.pinLocked, pinValue);
       setLoading('pin', false);
 
       if (result) {
@@ -1082,7 +1086,7 @@
     setLoading('override', true);
 
     setTimeout(() => {
-      const result = decryptWith(scannedPayload.overrideLocked, code);
+      const result = decryptWith(scannedPayload.ok ?? scannedPayload.overrideLocked, code);
       setLoading('override', false);
 
       if (result) {

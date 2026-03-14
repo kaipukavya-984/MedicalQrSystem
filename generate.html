@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureHealth QR — Your QR Code</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <!--
+    Qrious — lightweight, reliable, pure-JS QR generator.
+    Draws directly to a canvas. No API calls. Works offline.
+    https://github.com/neocotic/qrious
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #f2f5fa;
+      --white:        #ffffff;
+      --ink:          #0d1b2a;
+      --ink-60:       rgba(13,27,42,0.6);
+      --ink-35:       rgba(13,27,42,0.35);
+      --ink-10:       rgba(13,27,42,0.06);
+      --ink-06:       rgba(13,27,42,0.04);
+      --border:       rgba(13,27,42,0.1);
+      --red:          #e63946;
+      --red-soft:     rgba(230,57,70,0.08);
+      --red-border:   rgba(230,57,70,0.2);
+      --red-glow:     rgba(230,57,70,0.25);
+      --amber:        #f4a261;
+      --amber-soft:   rgba(244,162,97,0.12);
+      --amber-border: rgba(244,162,97,0.3);
+      --green:        #2ec4b6;
+      --green-soft:   rgba(46,196,182,0.1);
+      --green-border: rgba(46,196,182,0.25);
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(var(--border) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none; z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--red), #ff6b7a, var(--red));
+      z-index: 100;
+    }
+
+    .wrapper {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 20px 36px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(242,245,250,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50;
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+
+    .logo-icon {
+      width: 34px; height: 34px; background: var(--red); border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; box-shadow: 0 0 14px var(--red-glow);
+    }
+
+    .logo-text {
+      font-family: 'Bebas Neue', cursive; font-size: 1.1rem;
+      letter-spacing: 0.1em; color: var(--ink);
+    }
+
+    .logo-text span { color: var(--red); }
+
+    .header-tag {
+      font-size: 0.7rem; font-family: 'DM Mono', monospace;
+      color: var(--ink-35); letter-spacing: 0.06em;
+    }
+
+    /* ── Main grid ── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 390px;
+      gap: 28px;
+      padding: 40px 36px 64px;
+      max-width: 1040px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Left column ── */
+    .left-col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* Success banner */
+    .success-banner { animation: fadeUp 0.5s ease both; }
+
+    .success-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.63rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--green); background: var(--green-soft); border: 1px solid var(--green-border);
+      padding: 5px 12px; border-radius: 20px; margin-bottom: 16px;
+    }
+
+    .dot-pulse {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.6)} }
+
+    .success-title {
+      font-family: 'Bebas Neue', cursive;
+      font-size: clamp(2.4rem, 4vw, 3.4rem);
+      letter-spacing: 0.03em; color: var(--ink); line-height: 0.94; margin-bottom: 14px;
+    }
+
+    .success-title .accent { color: var(--red); }
+
+    .success-desc {
+      font-size: 0.86rem; font-weight: 300; color: var(--ink-60); line-height: 1.75;
+      max-width: 400px;
+    }
+
+    /* ── White card ── */
+    .wcard {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .wcard-label {
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--ink-35); margin-bottom: 12px;
+    }
+
+    /* Public chips */
+    .chips-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .chip {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 500;
+      padding: 6px 12px; border-radius: 8px;
+    }
+
+    .chip-blood  { background: var(--red-soft);   border: 1px solid var(--red-border);   color: var(--red); }
+    .chip-allergy{ background: var(--amber-soft);  border: 1px solid var(--amber-border); color: #a35c20; }
+    .chip-donor  { background: var(--green-soft);  border: 1px solid var(--green-border); color: var(--green); }
+    .chip-phone  { background: var(--ink-06);      border: 1px solid var(--border);       color: var(--ink-35); }
+
+    /* ── Override card ── */
+    .override-card {
+      background: var(--white);
+      border: 1px solid var(--amber-border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      position: relative; overflow: hidden;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+
+    .override-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--amber), #e08c50);
+    }
+
+    .override-hdr {
+      display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px;
+    }
+
+    .override-ico {
+      width: 38px; height: 38px;
+      background: var(--amber-soft); border: 1px solid var(--amber-border);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+
+    .override-title {
+      font-family: 'Bebas Neue', cursive; font-size: 1rem;
+      letter-spacing: 0.06em; color: var(--ink); margin-bottom: 3px;
+    }
+
+    .override-sub {
+      font-size: 0.73rem; color: var(--ink-60); font-weight: 300; line-height: 1.5;
+    }
+
+    /* Code display box */
+    .code-box {
+      background: var(--ink); border-radius: 10px;
+      padding: 16px 18px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .code-text {
+      font-family: 'DM Mono', monospace; font-size: 1.25rem; font-weight: 500;
+      color: var(--amber); letter-spacing: 0.15em;
+      /* Start blurred */
+      filter: blur(6px);
+      transition: filter 0.35s ease;
+      flex: 1;
+    }
+
+    .code-text.revealed {
+      filter: blur(0px);
+    }
+
+    /* Reveal button — IMPORTANT: pointer-events must be auto */
+    .reveal-btn {
+      background: rgba(244,162,97,0.18);
+      border: 1px solid rgba(244,162,97,0.35);
+      border-radius: 8px;
+      padding: 8px 15px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--amber);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      pointer-events: auto;        /* explicitly allow clicks */
+      user-select: none;
+      transition: background 0.2s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .reveal-btn:hover  { background: rgba(244,162,97,0.28); }
+    .reveal-btn:active { transform: scale(0.96); }
+
+    /* Copy / Share buttons */
+    .code-actions { display: flex; gap: 8px; }
+
+    .code-action {
+      flex: 1; padding: 10px 12px; border-radius: 9px;
+      border: 1px solid var(--border); background: var(--ink-06);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem; font-weight: 500; color: var(--ink-60);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background 0.2s, color 0.2s;
+      pointer-events: auto;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .code-action:hover    { background: var(--ink-10); color: var(--ink); }
+    .code-action:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    .override-warn {
+      display: flex; align-items: flex-start; gap: 8px;
+      background: var(--amber-soft); border: 1px solid var(--amber-border);
+      border-radius: 8px; padding: 10px 13px;
+      font-size: 0.72rem; color: #8a5020; line-height: 1.55;
+      margin-top: 12px;
+    }
+
+    /* ── Right column — QR ── */
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+    .qr-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 28px 24px;
+      display: flex; flex-direction: column; align-items: center;
+      box-shadow: 0 4px 24px rgba(13,27,42,0.07);
+      animation: fadeUp 0.5s 0.08s ease both;
+    }
+
+    .qr-card-label {
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--ink-35); margin-bottom: 20px; align-self: flex-start;
+    }
+
+    /* Decorative corner frame around QR */
+    .qr-frame {
+      position: relative;
+      padding: 10px;
+      margin-bottom: 14px;
+    }
+
+    .qr-frame::before, .qr-frame::after,
+    .qr-frame .c1, .qr-frame .c2 {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      border-color: var(--red); border-style: solid;
+    }
+
+    .qr-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 3px 0 0 0; }
+    .qr-frame::after  { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 3px 0; }
+    .qr-frame .c1 { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 3px 0 0; }
+    .qr-frame .c2 { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 3px; }
+
+    /* The canvas drawn by Qrious */
+    #qrCanvas {
+      display: block;
+      border-radius: 6px;
+      width: 240px !important;
+      height: 240px !important;
+    }
+
+    .qr-status {
+      font-size: 0.7rem; font-family: 'DM Mono', monospace;
+      color: var(--ink-35); margin-bottom: 18px; text-align: center;
+    }
+
+    .qr-status.ok  { color: var(--green); }
+    .qr-status.err { color: var(--red); }
+
+    /* QR action buttons */
+    .qr-actions { display: flex; flex-direction: column; gap: 9px; width: 100%; }
+
+    .qr-btn {
+      width: 100%; padding: 13px; border-radius: 11px; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 0.87rem; font-weight: 500;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      pointer-events: auto;
+    }
+
+    .qr-btn:hover  { transform: translateY(-1px); }
+    .qr-btn:active { transform: translateY(0); }
+
+    .qr-btn-dl {
+      background: linear-gradient(135deg, var(--ink), #1e3550);
+      color: #fff; box-shadow: 0 3px 14px rgba(13,27,42,0.2);
+    }
+
+    .qr-btn-print {
+      background: var(--ink-06); border: 1px solid var(--border); color: var(--ink-60);
+    }
+
+    .qr-btn-print:hover { background: var(--ink-10); color: var(--ink); }
+
+    /* Done section */
+    .done-section { animation: fadeUp 0.5s 0.18s ease both; }
+
+    .done-btn {
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      width: 100%; padding: 15px; border: none; border-radius: 13px;
+      background: linear-gradient(135deg, var(--red), #c1252f);
+      color: #fff;
+      font-family: 'Bebas Neue', cursive; font-size: 1.05rem; letter-spacing: 0.1em;
+      cursor: pointer;
+      box-shadow: 0 4px 18px var(--red-glow);
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-decoration: none;
+      pointer-events: auto;
+    }
+
+    .done-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 26px var(--red-glow); }
+    .done-btn:active { transform: translateY(0); }
+
+    .done-note {
+      font-size: 0.7rem; color: var(--ink-35); text-align: center;
+      margin-top: 9px; line-height: 1.55;
+    }
+
+    /* Animations */
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Responsive */
+    @media (max-width: 820px) {
+      main { grid-template-columns: 1fr; padding: 28px 18px 52px; gap: 20px; }
+      .right-col { order: -1; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🏥</div>
+      <div class="logo-text">Secure<span>Health</span> QR</div>
+    </div>
+    <div class="header-tag">Profile encrypted · QR ready</div>
+  </header>
+
+  <main>
+
+    <!-- ══════ LEFT COLUMN ══════ -->
+    <div class="left-col">
+
+      <!-- Success banner -->
+      <div class="success-banner">
+        <div class="success-eyebrow">
+          <div class="dot-pulse"></div>
+          Profile Encrypted Successfully
+        </div>
+        <div class="success-title">
+          YOUR QR<br/>CODE IS<br/>
+          <span class="accent">READY</span>
+        </div>
+        <p class="success-desc">
+          Encrypted with AES-256. Save it to your phone or print it as a wallet card.
+          Show it to any doctor in an emergency.
+        </p>
+      </div>
+
+      <!-- Public data preview -->
+      <div class="wcard" style="animation-delay:0.06s;">
+        <div class="wcard-label">⚡ Visible without PIN — always accessible to doctors</div>
+        <div class="chips-row" id="pubChips">
+          <div class="chip chip-blood">🩸 —</div>
+          <div class="chip chip-allergy">⚠️ —</div>
+          <div class="chip chip-donor">💚 —</div>
+        </div>
+      </div>
+
+      <!-- Override code -->
+      <div class="override-card">
+        <div class="override-hdr">
+          <div class="override-ico">🆘</div>
+          <div>
+            <div class="override-title">Emergency Override Code</div>
+            <div class="override-sub">
+              Share only with a trusted family member. Used when you cannot provide your PIN.
+            </div>
+          </div>
+        </div>
+
+        <!-- Blurred code -->
+        <div class="code-box">
+          <div class="code-text" id="codeText">EMR-XXXX-XXXX</div>
+          <button class="reveal-btn" id="revealBtn" type="button" onclick="toggleReveal()">
+            👁 Reveal
+          </button>
+        </div>
+
+        <!-- Copy / Share -->
+        <div class="code-actions">
+          <button class="code-action" id="copyBtn" type="button" disabled onclick="copyCode()">
+            📋 Copy Code
+          </button>
+          <button class="code-action" id="shareBtn" type="button" disabled onclick="shareCode()">
+            📤 Share
+          </button>
+        </div>
+
+        <div class="override-warn">
+          ⚠️ This code is shown <strong>only once</strong> and cannot be recovered.
+          Save it before leaving this page. Override access is read-only and logged.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════ RIGHT COLUMN ══════ -->
+    <div class="right-col">
+
+      <!-- QR card -->
+      <div class="qr-card">
+        <div class="qr-card-label">Your Encrypted QR Code</div>
+
+        <div class="qr-frame">
+          <div class="c1"></div>
+          <div class="c2"></div>
+          <!-- Qrious renders directly into this canvas -->
+          <canvas id="qrCanvas"></canvas>
+        </div>
+
+        <div class="qr-status" id="qrStatus">Generating QR code...</div>
+
+        <div class="qr-actions">
+          <button class="qr-btn qr-btn-dl"    type="button" onclick="downloadQR()">⬇️ Download QR as PNG</button>
+          <button class="qr-btn qr-btn-print" type="button" onclick="printQR()">🖨️ Print QR Code</button>
+        </div>
+      </div>
+
+      <!-- Done -->
+      <div class="done-section">
+        <a class="done-btn" href="index.html" onclick="clearSession()">
+          ✅ I've Saved Everything — Done
+        </a>
+        <p class="done-note">
+          Clicking Done clears the override code from memory.<br/>
+          Make sure you have copied it first.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+'use strict';
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let overrideCode = '';
+let qrPayload    = null;
+let isRevealed   = false;
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', init);
+
+function init() {
+  loadData();
+}
+
+// ─── Load data ────────────────────────────────────────────────────────────────
+function loadData() {
+  const rawPayload  = sessionStorage.getItem('qrPayload');
+  const rawOverride = sessionStorage.getItem('overrideCode');
+
+  if (!rawPayload || !rawOverride) {
+    // Demo mode
+    overrideCode = 'EMR-4K9X-PLMR';
+    qrPayload = {
+      v:  '1',
+      p:  { b: 'O−', a: 1, d: 1, e: '9876543210' },
+      pk: 'DEMO_PIN_ENCRYPTED_DATA',
+      ok: 'DEMO_OVERRIDE_ENCRYPTED_DATA'
+    };
+    showDemoBanner();
+  } else {
+    const full   = JSON.parse(rawPayload);
+    overrideCode = rawOverride;
+
+    // Build compact payload
+    const pub = full.public || {};
+    qrPayload = {
+      v:  '1',
+      p:  {
+        b: pub.bloodType      || '',
+        a: pub.hasAllergies   ? 1 : 0,
+        d: pub.isDonor        ? 1 : 0,
+        e: pub.emergencyPhone || ''
+      },
+      pk: full.pinLocked      || '',
+      ok: full.overrideLocked || ''
+    };
+  }
+
+  renderPage();
+}
+
+function showDemoBanner() {
+  const d = document.createElement('div');
+  d.style.cssText = 'background:rgba(244,162,97,0.09);border:1px solid rgba(244,162,97,0.25);border-radius:9px;padding:9px 16px;font-size:0.74rem;color:#b36a2a;margin:10px 36px -10px;position:relative;z-index:2;';
+  d.textContent = '🎭 Demo mode — sample data shown';
+  document.querySelector('main').insertAdjacentElement('beforebegin', d);
+}
+
+// ─── Render page ──────────────────────────────────────────────────────────────
+function renderPage() {
+  // Override code (blurred initially)
+  document.getElementById('codeText').textContent = overrideCode;
+
+  // Public chips
+  const p          = qrPayload.p || {};
+  const bloodType  = p.b || 'Unknown';
+  const hasAllergy = !!p.a;
+  const isDonor    = !!p.d;
+  const phone      = p.e || '—';
+
+  document.getElementById('pubChips').innerHTML = `
+    <div class="chip chip-blood">🩸 ${bloodType}</div>
+    <div class="chip chip-allergy">${hasAllergy ? '⚠️ Has Allergies' : '✅ No Allergies'}</div>
+    <div class="chip chip-donor">${isDonor ? '💚 Organ Donor' : '❌ Not a Donor'}</div>
+    <div class="chip chip-phone">📞 ${phone}</div>
+  `;
+
+  // Generate QR
+  generateQR();
+}
+
+// ─── QR Generation using Qrious ───────────────────────────────────────────────
+function generateQR() {
+  const statusEl = document.getElementById('qrStatus');
+  const canvas   = document.getElementById('qrCanvas');
+
+  // Qrious is loaded from CDN — check it's available
+  if (typeof QRious === 'undefined') {
+    statusEl.textContent = '⚠️ QR library not loaded — check internet connection';
+    statusEl.className   = 'qr-status err';
+    return;
+  }
+
+  const qrText = JSON.stringify(qrPayload);
+  const kb     = (new Blob([qrText]).size / 1024).toFixed(1);
+
+  try {
+    // Qrious draws onto the canvas directly
+    new QRious({
+      element:         canvas,
+      value:           qrText,
+      size:            240,
+      foreground:      '#0d1b2a',
+      background:      '#ffffff',
+      level:           'L',      // L = lowest error correction = most data capacity
+      padding:         8
+    });
+
+    statusEl.textContent = `✓ QR ready · ${kb} KB · AES-256 encrypted`;
+    statusEl.className   = 'qr-status ok';
+
+  } catch (err) {
+    console.error('Qrious failed:', err);
+    // Payload too large — use localStorage short-ID approach
+    useLocalStorageApproach(canvas, statusEl);
+  }
+}
+
+function useLocalStorageApproach(canvas, statusEl) {
+  // Save full payload to localStorage with a short key
+  const id  = 'shqr_' + Date.now().toString(36);
+  localStorage.setItem(id, JSON.stringify(qrPayload));
+
+  // Encode only the short ID into the QR
+  const shortText = JSON.stringify({ v: '1', id, local: true });
+
+  try {
+    new QRious({
+      element:    canvas,
+      value:      shortText,
+      size:       240,
+      foreground: '#0d1b2a',
+      background: '#ffffff',
+      level:      'L',
+      padding:    8
+    });
+
+    statusEl.textContent = '✓ QR ready (local mode) · AES-256 encrypted';
+    statusEl.className   = 'qr-status ok';
+
+  } catch (err2) {
+    statusEl.textContent = '⚠️ QR generation failed: ' + err2.message;
+    statusEl.className   = 'qr-status err';
+  }
+}
+
+// ─── Override code reveal ─────────────────────────────────────────────────────
+function toggleReveal() {
+  isRevealed = !isRevealed;
+
+  const codeEl   = document.getElementById('codeText');
+  const btn      = document.getElementById('revealBtn');
+  const copyBtn  = document.getElementById('copyBtn');
+  const shareBtn = document.getElementById('shareBtn');
+
+  if (isRevealed) {
+    codeEl.classList.add('revealed');
+    btn.textContent       = '🙈 Hide';
+    copyBtn.disabled      = false;
+    shareBtn.disabled     = false;
+  } else {
+    codeEl.classList.remove('revealed');
+    btn.textContent       = '👁 Reveal';
+    copyBtn.disabled      = true;
+    shareBtn.disabled     = true;
+  }
+}
+
+// ─── Copy code ────────────────────────────────────────────────────────────────
+function copyCode() {
+  if (!overrideCode) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(overrideCode).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy Code', 2200);
+    }).catch(() => fallbackCopy());
+  } else {
+    fallbackCopy();
+  }
+}
+
+function fallbackCopy() {
+  const ta = document.createElement('textarea');
+  ta.value = overrideCode;
+  ta.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = '✅ Copied!';
+  setTimeout(() => btn.textContent = '📋 Copy Code', 2200);
+}
+
+// ─── Share code ───────────────────────────────────────────────────────────────
+function shareCode() {
+  if (!overrideCode) return;
+  if (navigator.share) {
+    navigator.share({
+      title: 'SecureHealth QR — Emergency Override Code',
+      text:  `My emergency health override code: ${overrideCode}\n\nUse this with SecureHealth QR to access my medical profile in an emergency.`
+    }).catch(() => copyCode());
+  } else {
+    copyCode();
+  }
+}
+
+// ─── Download QR ──────────────────────────────────────────────────────────────
+function downloadQR() {
+  const canvas = document.getElementById('qrCanvas');
+  if (!canvas || !canvas.toDataURL) {
+    alert('QR not ready yet.');
+    return;
+  }
+
+  // Add white padding
+  const pad    = 20;
+  const out    = document.createElement('canvas');
+  out.width    = canvas.width  + pad * 2;
+  out.height   = canvas.height + pad * 2;
+  const ctx    = out.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(canvas, pad, pad);
+
+  const link      = document.createElement('a');
+  link.download   = 'SecureHealthQR.png';
+  link.href       = out.toDataURL('image/png');
+  link.click();
+}
+
+// ─── Print QR ─────────────────────────────────────────────────────────────────
+function printQR() {
+  const canvas = document.getElementById('qrCanvas');
+  if (!canvas) return;
+
+  const dataUrl = canvas.toDataURL('image/png');
+  const p       = qrPayload?.p || {};
+
+  const win = window.open('', '_blank');
+  if (!win) { alert('Allow popups to print.'); return; }
+
+  win.document.write(`<!DOCTYPE html>
+<html><head><title>SecureHealth QR</title>
+<style>
+  body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px; }
+  h2   { font-size: 1.3rem; margin-bottom: 6px; }
+  p    { color: #666; font-size: 0.78rem; margin-bottom: 22px; }
+  img  { width: 200px; height: 200px; border: 1px solid #e8ecf0; border-radius: 8px; }
+  .meta{ margin-top: 18px; font-size: 0.74rem; color: #444; text-align: center; line-height: 1.9; }
+  .foot{ margin-top: 18px; font-size: 0.6rem; color: #aaa; text-align: center; }
+</style>
+</head><body>
+<h2>🏥 SecureHealth QR</h2>
+<p>Scan for emergency medical access</p>
+<img src="${dataUrl}" alt="SecureHealth QR"/>
+<div class="meta">
+  Blood Type: <strong>${p.b||'—'}</strong> &nbsp;|&nbsp;
+  Allergies: <strong>${p.a ? 'Yes' : 'No'}</strong> &nbsp;|&nbsp;
+  Organ Donor: <strong>${p.d ? 'Yes' : 'No'}</strong><br/>
+  Emergency Contact: <strong>${p.e||'—'}</strong>
+</div>
+<div class="foot">AES-256 Encrypted · SecureHealth QR · PIN required to view full profile</div>
+<script>window.onload = function(){ window.print(); }<\/script>
+</body></html>`);
+  win.document.close();
+}
+
+// ─── Clear session on done ────────────────────────────────────────────────────
+function clearSession() {
+  sessionStorage.removeItem('overrideCode');
+  sessionStorage.removeItem('qrPayload');
+}
+</script>
+</body>
+</html>

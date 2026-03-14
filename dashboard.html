@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureHealth QR — Patient Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #060c14;
+      --surface:     #0b1422;
+      --surface-2:   #0f1c2e;
+      --border:      rgba(255,255,255,0.07);
+      --border-2:    rgba(255,255,255,0.12);
+      --white:       #eef2f8;
+      --white-70:    rgba(238,242,248,0.7);
+      --white-40:    rgba(238,242,248,0.4);
+      --white-12:    rgba(238,242,248,0.12);
+      --white-06:    rgba(238,242,248,0.06);
+      --red:         #e63946;
+      --red-soft:    rgba(230,57,70,0.12);
+      --red-border:  rgba(230,57,70,0.25);
+      --teal:        #2ec4b6;
+      --teal-soft:   rgba(46,196,182,0.1);
+      --teal-border: rgba(46,196,182,0.22);
+      --amber:       #ffd166;
+      --amber-soft:  rgba(255,209,102,0.1);
+      --amber-border:rgba(255,209,102,0.22);
+      --blue:        #4895ef;
+      --blue-soft:   rgba(72,149,239,0.1);
+      --blue-border: rgba(72,149,239,0.22);
+      --green:       #06d6a0;
+      --green-soft:  rgba(6,214,160,0.1);
+      --green-border:rgba(6,214,160,0.22);
+      --danger:      #ff4d6d;
+      --danger-soft: rgba(255,77,109,0.12);
+      --warning:     #ffd166;
+      --safe:        #06d6a0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 10% 0%, rgba(230,57,70,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 90% 100%, rgba(46,196,182,0.07) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page-wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 28px 80px;
+    }
+
+    /* ── Header ── */
+    .dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+      animation: fadeDown 0.5s ease both;
+    }
+
+    .dash-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dash-logo-icon {
+      width: 36px; height: 36px;
+      background: var(--red);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 0 18px rgba(230,57,70,0.35);
+    }
+
+    .dash-logo-text {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1.2rem;
+      letter-spacing: 0.1em;
+      color: var(--white);
+    }
+
+    .dash-logo-text span { color: var(--red); }
+
+    .dash-header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .access-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .badge-pin      { background: var(--blue-soft);  border: 1px solid var(--blue-border);  color: var(--blue); }
+    .badge-override { background: var(--amber-soft); border: 1px solid var(--amber-border); color: var(--amber); }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      animation: pulseDot 1.8s ease-in-out infinite;
+    }
+
+    .badge-pin      .badge-dot { background: var(--blue); }
+    .badge-override .badge-dot { background: var(--amber); }
+
+    @keyframes pulseDot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.4; transform:scale(0.6); }
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--white-40);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--white-70); }
+
+    /* ── Patient name banner ── */
+    .patient-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      animation: fadeUp 0.5s 0.05s ease both;
+    }
+
+    .patient-id {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .patient-avatar {
+      width: 58px; height: 58px;
+      background: linear-gradient(135deg, var(--red), #b5202d);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 24px rgba(230,57,70,0.3);
+      flex-shrink: 0;
+    }
+
+    .patient-name {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1.9rem;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .patient-meta {
+      font-size: 0.78rem;
+      color: var(--white-40);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .patient-quick {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .quick-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 9px;
+    }
+
+    .chip-blood   { background: var(--red-soft);   border: 1px solid var(--red-border);   color: #ff8a93; }
+    .chip-allergy { background: var(--amber-soft);  border: 1px solid var(--amber-border); color: var(--amber); }
+    .chip-donor   { background: var(--teal-soft);   border: 1px solid var(--teal-border);  color: var(--teal); }
+
+    /* ── Grid layout ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 26px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .card-full { grid-column: span 2; }
+    .card-full-3 { grid-column: span 3; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .card-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .icon-ai     { background: rgba(72,149,239,0.15);  border: 1px solid var(--blue-border);  }
+    .icon-med    { background: var(--red-soft);         border: 1px solid var(--red-border);   }
+    .icon-drug   { background: var(--amber-soft);       border: 1px solid var(--amber-border); }
+    .icon-organ  { background: var(--teal-soft);        border: 1px solid var(--teal-border);  }
+    .icon-contact{ background: var(--green-soft);       border: 1px solid var(--green-border); }
+    .icon-log    { background: var(--white-06);         border: 1px solid var(--border);       }
+
+    .card-title {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      color: var(--white-70);
+    }
+
+    /* ── AI Summary ── */
+    .ai-summary-box {
+      background: var(--surface-2);
+      border: 1px solid var(--blue-border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      font-size: 0.88rem;
+      line-height: 1.85;
+      color: var(--white-70);
+      min-height: 90px;
+      position: relative;
+    }
+
+    .ai-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--white-40);
+      font-size: 0.82rem;
+    }
+
+    .ai-spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(72,149,239,0.25);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .ai-text { display: none; }
+    .ai-text.visible { display: block; animation: fadeUp 0.4s ease both; }
+
+    .ai-error {
+      color: var(--red);
+      font-size: 0.8rem;
+      display: none;
+    }
+
+    .ai-error.visible { display: block; }
+
+    /* ── Data rows ── */
+    .data-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+    }
+
+    .data-row:last-child { border-bottom: none; }
+
+    .data-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--white-40);
+      white-space: nowrap;
+      padding-top: 2px;
+    }
+
+    .data-val {
+      font-size: 0.88rem;
+      color: var(--white);
+      text-align: right;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .data-val.highlight-red  { color: #ff8a93; }
+    .data-val.highlight-teal { color: var(--teal); }
+    .data-val.highlight-blue { color: var(--blue); }
+
+    /* ── Tag pills ── */
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .tag-pill {
+      font-size: 0.76rem;
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      padding: 5px 11px;
+      border-radius: 6px;
+    }
+
+    .tag-red    { background: var(--red-soft);   border: 1px solid var(--red-border);   color: #ff8a93; }
+    .tag-amber  { background: var(--amber-soft);  border: 1px solid var(--amber-border); color: var(--amber); }
+    .tag-blue   { background: var(--blue-soft);   border: 1px solid var(--blue-border);  color: var(--blue); }
+    .tag-teal   { background: var(--teal-soft);   border: 1px solid var(--teal-border);  color: var(--teal); }
+    .tag-muted  { background: var(--white-06);    border: 1px solid var(--border);       color: var(--white-40); }
+
+    /* ── Organ grid ── */
+    .organ-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+    }
+
+    .organ-cell {
+      padding: 11px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+
+    .organ-yes { background: var(--teal-soft);  border: 1px solid var(--teal-border);  color: var(--teal); }
+    .organ-no  { background: var(--white-06);   border: 1px solid var(--border);       color: var(--white-40); }
+
+    /* ── Drug checker ── */
+    .drug-input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .drug-input {
+      flex: 1;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      color: var(--white);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .drug-input::placeholder { color: var(--white-40); }
+    .drug-input:focus { border-color: var(--amber); }
+
+    .drug-check-btn {
+      background: linear-gradient(135deg, var(--amber), #e08c50);
+      color: #1a0900;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-family: 'Bebas Neue', cursive;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .drug-check-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,209,102,0.25); }
+    .drug-check-btn:active { transform: translateY(0); }
+
+    .drug-result {
+      border-radius: 11px;
+      padding: 14px 16px;
+      font-size: 0.84rem;
+      line-height: 1.6;
+      display: none;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .drug-result.visible { display: block; }
+    .drug-result.safe    { background: var(--green-soft);  border: 1px solid var(--green-border);  color: var(--green); }
+    .drug-result.warning { background: var(--amber-soft);  border: 1px solid var(--amber-border);  color: var(--amber); }
+    .drug-result.danger  { background: var(--danger-soft); border: 1px solid rgba(255,77,109,0.3); color: var(--danger); }
+
+    .drug-spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,209,102,0.25);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    /* ── Emergency contact card ── */
+    .contact-big {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 14px;
+    }
+
+    .contact-avatar {
+      width: 60px; height: 60px;
+      background: var(--green-soft);
+      border: 2px solid var(--green-border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+
+    .contact-name {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1.3rem;
+      letter-spacing: 0.05em;
+      color: var(--white);
+    }
+
+    .contact-relation {
+      font-size: 0.72rem;
+      color: var(--white-40);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: -8px;
+    }
+
+    .call-btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--green), #04b87a);
+      color: #002a1a;
+      border: none;
+      border-radius: 11px;
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-decoration: none;
+      box-shadow: 0 4px 18px rgba(6,214,160,0.25);
+    }
+
+    .call-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(6,214,160,0.3); }
+
+    /* ── Action buttons row ── */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s 0.15s ease both;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 13px 16px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--white-70);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+      text-decoration: none;
+    }
+
+    .action-btn:hover {
+      background: var(--white-06);
+      border-color: var(--border-2);
+      color: var(--white);
+      transform: translateY(-1px);
+    }
+
+    /* ── Access log ── */
+    .log-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+    }
+
+    .log-row:last-child { border-bottom: none; }
+
+    .log-method {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      padding: 3px 9px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+
+    .log-pin      { background: var(--blue-soft);  color: var(--blue);  border: 1px solid var(--blue-border); }
+    .log-override { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
+
+    .log-time { color: var(--white-40); font-family: 'DM Mono', monospace; }
+    .log-device { color: var(--white-40); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stagger cards */
+    .grid-2 .card:nth-child(1), .grid-3 .card:nth-child(1) { animation-delay: 0.08s; }
+    .grid-2 .card:nth-child(2), .grid-3 .card:nth-child(2) { animation-delay: 0.14s; }
+    .grid-3 .card:nth-child(3) { animation-delay: 0.2s; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .card-full, .card-full-3 { grid-column: span 1; }
+    }
+
+    @media (max-width: 600px) {
+      .page-wrap { padding: 0 16px 60px; }
+      .patient-banner { flex-direction: column; align-items: flex-start; }
+      .action-row { flex-wrap: wrap; }
+      .organ-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- ── Header ── -->
+  <div class="dash-header">
+    <div class="dash-logo">
+      <div class="dash-logo-icon">🏥</div>
+      <div class="dash-logo-text">Secure<span>Health</span> QR</div>
+    </div>
+    <div class="dash-header-right">
+      <div class="access-badge" id="accessBadge">
+        <div class="badge-dot"></div>
+        <span id="accessBadgeText">PIN Access</span>
+      </div>
+      <a class="back-link" href="scanner.html">← Scan Another</a>
+    </div>
+  </div>
+
+  <!-- ── Patient banner ── -->
+  <div class="patient-banner">
+    <div class="patient-id">
+      <div class="patient-avatar">👤</div>
+      <div>
+        <div class="patient-name" id="patientName">Loading...</div>
+        <div class="patient-meta" id="patientMeta">—</div>
+      </div>
+    </div>
+    <div class="patient-quick" id="quickChips"></div>
+  </div>
+
+  <!-- ── Action row ── -->
+  <div class="action-row">
+    <button class="action-btn" onclick="copyToClipboard()">📋 Copy Summary</button>
+    <button class="action-btn" onclick="window.print()">🖨️ Print for Records</button>
+    <button class="action-btn" onclick="document.getElementById('logCard').scrollIntoView({behavior:'smooth'})">🔒 View Access Log</button>
+  </div>
+
+  <!-- ── Row 1: AI Summary + Medical ── -->
+  <div class="grid-2">
+
+    <!-- AI Summary -->
+    <div class="card" style="animation-delay:0.08s;">
+      <div class="card-header">
+        <div class="card-icon icon-ai">🤖</div>
+        <div class="card-title">AI Emergency Summary</div>
+      </div>
+      <div class="ai-summary-box">
+        <div class="ai-loading" id="aiLoading">
+          <div class="ai-spinner"></div>
+          Generating emergency summary...
+        </div>
+        <div class="ai-text" id="aiText"></div>
+        <div class="ai-error" id="aiError">⚠️ AI unavailable — check internet. Raw data shown below.</div>
+      </div>
+    </div>
+
+    <!-- Medical Details -->
+    <div class="card" style="animation-delay:0.14s;">
+      <div class="card-header">
+        <div class="card-icon icon-med">💊</div>
+        <div class="card-title">Medical Profile</div>
+      </div>
+
+      <div class="data-row">
+        <div class="data-label">Blood Type</div>
+        <div class="data-val highlight-red" id="bloodType">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-label">Date of Birth</div>
+        <div class="data-val" id="dob">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-label">Gender</div>
+        <div class="data-val" id="gender">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-label">Allergies</div>
+        <div class="data-val" id="allergies">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-label">Medications</div>
+        <div class="data-val" id="medications">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-label">Conditions</div>
+        <div class="data-val" id="conditions">—</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Row 2: Drug Checker + Organ + Contact ── -->
+  <div class="grid-3">
+
+    <!-- Drug checker -->
+    <div class="card" style="animation-delay:0.1s;">
+      <div class="card-header">
+        <div class="card-icon icon-drug">⚠️</div>
+        <div class="card-title">Drug Safety Checker</div>
+      </div>
+      <div class="drug-input-row">
+        <input class="drug-input" id="drugInput" type="text" placeholder="Type medication name…" autocomplete="off"/>
+        <button class="drug-check-btn" onclick="checkDrug()">
+          <div class="drug-spinner" id="drugSpinner"></div>
+          <span id="drugBtnText">Check</span>
+        </button>
+      </div>
+      <div class="drug-result" id="drugResult"></div>
+      <div style="font-size:0.7rem;color:var(--white-40);margin-top:12px;line-height:1.5;">
+        AI checks the medication against patient allergies and current medications in real time.
+      </div>
+    </div>
+
+    <!-- Organ donation -->
+    <div class="card" style="animation-delay:0.16s;">
+      <div class="card-header">
+        <div class="card-icon icon-organ">💚</div>
+        <div class="card-title">Organ Donation</div>
+      </div>
+      <div id="organContent">
+        <div style="color:var(--white-40);font-size:0.82rem;">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Emergency contact -->
+    <div class="card" style="animation-delay:0.22s;">
+      <div class="card-header">
+        <div class="card-icon icon-contact">📞</div>
+        <div class="card-title">Emergency Contact</div>
+      </div>
+      <div class="contact-big">
+        <div class="contact-avatar">👥</div>
+        <div>
+          <div class="contact-name" id="contactName">—</div>
+          <div class="contact-relation" id="contactRelation">—</div>
+        </div>
+        <a class="call-btn" id="callBtn" href="#">
+          📞 Call Now
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Access Log ── -->
+  <div class="card" id="logCard" style="animation-delay:0.25s;">
+    <div class="card-header">
+      <div class="card-icon icon-log">🔒</div>
+      <div class="card-title">Access Log — Patient Audit Trail</div>
+    </div>
+    <div id="logContent">
+      <div style="color:var(--white-40);font-size:0.82rem;">No logs found.</div>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+  const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+  const MODEL      = 'claude-sonnet-4-20250514';
+
+  let patientData  = null;
+  let accessMethod = 'pin';
+
+  // ── Init ──
+  window.onload = () => {
+    loadData();
+    renderAccessLog();
+
+    // Drug checker on Enter
+    document.getElementById('drugInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') checkDrug();
+    });
+  };
+
+  function loadData() {
+    const raw    = sessionStorage.getItem('decryptedData');
+    accessMethod = sessionStorage.getItem('accessMethod') || 'pin';
+
+    if (!raw) {
+      // Demo mode
+      patientData = {
+        name: 'Ravi Kumar', dob: '1985-01-12', gender: 'Male',
+        allergies:   ['Penicillin', 'Peanuts'],
+        medications: ['Metformin 500mg', 'Lisinopril 10mg'],
+        conditions:  ['Type 2 Diabetes', 'Hypertension'],
+        emergencyContact: { name: 'Priya Kumar', phone: '9876543210', relation: 'Spouse' },
+        organDonation: { isDonor: true, organs: ['Kidney', 'Corneas'] }
+      };
+      showDemoBanner();
+    } else {
+      patientData = JSON.parse(raw);
+    }
+
+    renderAll();
+    generateAISummary();
+  }
+
+  function showDemoBanner() {
+    const b = document.createElement('div');
+    b.style.cssText = 'background:rgba(255,209,102,0.08);border:1px solid rgba(255,209,102,0.2);border-radius:10px;padding:10px 16px;font-size:0.75rem;color:#ffd166;margin-bottom:18px;';
+    b.textContent = '🎭 Demo mode — showing sample patient data';
+    document.querySelector('.page-wrap').insertBefore(b, document.querySelector('.dash-header').nextSibling);
+  }
+
+  function renderAll() {
+    const p = patientData;
+
+    // Access badge
+    const badge = document.getElementById('accessBadge');
+    document.getElementById('accessBadgeText').textContent =
+      accessMethod === 'override' ? '🆘 Override Access' : '🔑 PIN Access';
+    badge.className = 'access-badge ' + (accessMethod === 'override' ? 'badge-override' : 'badge-pin');
+
+    // Patient name
+    document.getElementById('patientName').textContent = p.name || 'Unknown Patient';
+
+    // Meta
+    const age = p.dob ? Math.floor((Date.now() - new Date(p.dob)) / 31557600000) : '?';
+    document.getElementById('patientMeta').textContent =
+      `${p.gender || '—'} · ${age} yrs · Accessed ${new Date().toLocaleTimeString()}`;
+
+    // Quick chips
+    const pub = JSON.parse(sessionStorage.getItem('scannedPayload') || '{}').public || {};
+    const chips = document.getElementById('quickChips');
+    chips.innerHTML = `
+      <div class="quick-chip chip-blood">🩸 ${p.bloodType || pub.bloodType || '—'}</div>
+      <div class="quick-chip chip-allergy">${p.allergies?.length ? '⚠️ ' + p.allergies.length + ' Allerg' + (p.allergies.length > 1 ? 'ies' : 'y') : '✅ No Allergies'}</div>
+      <div class="quick-chip chip-donor">${p.organDonation?.isDonor ? '💚 Organ Donor' : '❌ Not a Donor'}</div>
+    `;
+
+    // Medical card
+    document.getElementById('bloodType').textContent   = p.bloodType || pub.bloodType || '—';
+    document.getElementById('dob').textContent         = p.dob ? new Date(p.dob).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+    document.getElementById('gender').textContent      = p.gender || '—';
+    document.getElementById('allergies').innerHTML     = renderTags(p.allergies,  'tag-red');
+    document.getElementById('medications').innerHTML   = renderTags(p.medications,'tag-amber');
+    document.getElementById('conditions').innerHTML    = renderTags(p.conditions, 'tag-blue');
+
+    // Organ donation
+    renderOrgans(p.organDonation);
+
+    // Emergency contact
+    const ec = p.emergencyContact || {};
+    document.getElementById('contactName').textContent    = ec.name     || '—';
+    document.getElementById('contactRelation').textContent= ec.relation || 'Emergency Contact';
+    const callBtn = document.getElementById('callBtn');
+    if (ec.phone) {
+      callBtn.href        = 'tel:' + ec.phone;
+      callBtn.textContent = '';
+      callBtn.innerHTML   = `📞 Call ${ec.name || 'Contact'} — ${ec.phone}`;
+    }
+  }
+
+  function renderTags(arr, cls) {
+    if (!arr || !arr.length) return `<span style="color:var(--white-40);font-size:0.82rem;">None reported</span>`;
+    return arr.map(t => `<span class="tag-pill ${cls}">${t}</span>`).join(' ');
+  }
+
+  function renderOrgans(donation) {
+    const el = document.getElementById('organContent');
+    if (!donation || !donation.isDonor) {
+      el.innerHTML = `
+        <div style="text-align:center;padding:16px 0;">
+          <div style="font-size:2rem;margin-bottom:8px;">❌</div>
+          <div style="color:var(--white-40);font-size:0.82rem;">Patient has not consented to organ donation.</div>
+        </div>`;
+      return;
+    }
+
+    const all = ['Kidney','Liver','Heart','Lungs','Corneas','Skin'];
+    const consented = donation.organs || [];
+    el.innerHTML = `
+      <div class="organ-grid">
+        ${all.map(o => `
+          <div class="organ-cell ${consented.includes(o) ? 'organ-yes' : 'organ-no'}">
+            ${consented.includes(o) ? '✅' : '○'} ${o}
+          </div>`).join('')}
+      </div>
+    `;
+  }
+
+  // ── AI Summary ──
+  async function generateAISummary() {
+    const loadEl = document.getElementById('aiLoading');
+    const textEl = document.getElementById('aiText');
+    const errEl  = document.getElementById('aiError');
+
+    try {
+      const response = await fetch(CLAUDE_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 1000,
+          system: `You are an emergency medical assistant generating a concise 4-line patient summary for a doctor.
+Format exactly like this (each on its own line, no bullets):
+Line 1: [Name], [age]yo [gender], Blood Type [X]
+Line 2: ⚠️ Allergies: [list] OR ✅ No known allergies
+Line 3: Conditions: [list] | Medications: [list] OR None
+Line 4: Organ donor — [consented organs] | Emergency: [contact name] [phone]
+Keep it scannable, factual, under 60 words total. This is a medical emergency.`,
+          messages: [{ role: 'user', content: JSON.stringify(patientData) }]
+        })
+      });
+
+      const data    = await response.json();
+      const summary = data.content?.[0]?.text || '';
+
+      loadEl.style.display = 'none';
+      textEl.textContent   = summary;
+      textEl.classList.add('visible');
+
+      // Store for copy
+      window._aiSummary = summary;
+
+    } catch(e) {
+      loadEl.style.display = 'none';
+      errEl.classList.add('visible');
+      // Fallback summary
+      const p   = patientData;
+      const age = p.dob ? Math.floor((Date.now()-new Date(p.dob))/31557600000) : '?';
+      textEl.textContent = `${p.name}, ${age}yo ${p.gender||''}. Blood Type: ${p.bloodType||'Unknown'}. `
+        + (p.allergies?.length ? `⚠️ Allergic to: ${p.allergies.join(', ')}. ` : 'No known allergies. ')
+        + (p.conditions?.length ? `Conditions: ${p.conditions.join(', ')}. ` : '')
+        + (p.organDonation?.isDonor ? `Organ donor (${p.organDonation.organs?.join(', ')}). ` : 'Not an organ donor. ')
+        + `Contact: ${p.emergencyContact?.name||'—'} ${p.emergencyContact?.phone||''}`;
+      textEl.classList.add('visible');
+      window._aiSummary = textEl.textContent;
+    }
+  }
+
+  // ── Drug checker ──
+  async function checkDrug() {
+    const med     = document.getElementById('drugInput').value.trim();
+    const resultEl= document.getElementById('drugResult');
+    const spinner = document.getElementById('drugSpinner');
+    const btnText = document.getElementById('drugBtnText');
+
+    if (!med) return;
+
+    spinner.style.display = 'block';
+    btnText.textContent   = '...';
+    resultEl.className    = 'drug-result';
+
+    try {
+      const response = await fetch(CLAUDE_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 1000,
+          system: `You are a clinical drug safety checker. Given patient allergies and medications, assess if a proposed medication is safe.
+Respond in exactly this format:
+STATUS: SAFE | WARNING | DANGER
+REASON: [one sentence explanation]
+Keep it under 25 words total. Be medically accurate.`,
+          messages: [{
+            role: 'user',
+            content: `Patient allergies: ${JSON.stringify(patientData.allergies)}
+Current medications: ${JSON.stringify(patientData.medications)}
+Proposed medication: ${med}`
+          }]
+        })
+      });
+
+      const data   = await response.json();
+      const result = data.content?.[0]?.text || '';
+
+      spinner.style.display = 'none';
+      btnText.textContent   = 'Check';
+
+      let cls = 'safe';
+      if (result.includes('DANGER'))  cls = 'danger';
+      else if (result.includes('WARNING')) cls = 'warning';
+
+      resultEl.className   = 'drug-result visible ' + cls;
+      resultEl.textContent = result;
+
+    } catch(e) {
+      spinner.style.display = 'none';
+      btnText.textContent   = 'Check';
+      resultEl.className    = 'drug-result visible warning';
+      resultEl.textContent  = 'STATUS: WARNING\nREASON: AI unavailable — verify manually against known allergies.';
+    }
+  }
+
+  // ── Copy summary ──
+  function copyToClipboard() {
+    const p   = patientData;
+    const txt = window._aiSummary || `Patient: ${p.name}\nBlood: ${p.bloodType}\nAllergies: ${p.allergies?.join(', ')||'None'}\nMeds: ${p.medications?.join(', ')||'None'}\nContact: ${p.emergencyContact?.name} ${p.emergencyContact?.phone}`;
+    navigator.clipboard.writeText(txt).then(() => {
+      const btn = event.target;
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy Summary', 2000);
+    });
+  }
+
+  // ── Access Log ──
+  function renderAccessLog() {
+    const logs   = JSON.parse(localStorage.getItem('shqr_accessLogs') || '[]');
+    const logEl  = document.getElementById('logContent');
+
+    if (!logs.length) {
+      logEl.innerHTML = '<div style="color:var(--white-40);font-size:0.82rem;padding:8px 0;">No access records found.</div>';
+      return;
+    }
+
+    logEl.innerHTML = [...logs].reverse().slice(0, 10).map(log => `
+      <div class="log-row">
+        <div class="log-method ${log.method === 'override' ? 'log-override' : 'log-pin'}">
+          ${log.method === 'override' ? '🆘 Override' : '🔑 PIN'}
+        </div>
+        <div class="log-time">${new Date(log.timestamp).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="log-device">${log.device || 'Unknown device'}</div>
+      </div>
+    `).join('');
+  }
+</script>
+
+</body>
+</html>
