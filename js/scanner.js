@@ -1,351 +1,297 @@
 'use strict';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SecureHealth QR — scanner.js
-//  Handles: camera init, QR detection, payload parsing, UI state management
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// SecureHealth QR — scanner.js (REVISED)
+// Fixes:
+// 1. Camera start issues
+// 2. Upload QR image issues
+// 3. Reset scanner state
+// 4. Works on desktop + mobile
+// ─────────────────────────────────────────────
 
-// ─── State ────────────────────────────────────────────────────────────────────
-let html5QrCode  = null;   // Html5Qrcode instance
-let scanComplete = false;  // prevents double-processing
+// ─── STATE ───────────────────────────────────
+let html5QrCode = null;
+let scanComplete = false;
 
-// ─── DOM refs (populated on DOMContentLoaded) ─────────────────────────────────
+// ─── DOM REFERENCES ──────────────────────────
 let readerEl, placeholderEl, startBtn, stopBtn, scanLine, vfCorners;
 let statusDot, statusText;
 let howCard, errorCard, pubCard, accessCard;
 let chipBlood, chipAllergy, chipDonor, chipPhone, callBtn;
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  INIT
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Grab all DOM references once
-  readerEl      = document.getElementById('reader');
-  placeholderEl = document.getElementById('placeholder');
-  startBtn      = document.getElementById('startBtn');
-  stopBtn       = document.getElementById('stopBtn');
-  scanLine      = document.getElementById('scanLine');
-  vfCorners     = document.getElementById('vfCorners');
-  statusDot     = document.getElementById('statusDot');
-  statusText    = document.getElementById('statusText');
-  howCard       = document.getElementById('howCard');
-  errorCard     = document.getElementById('errorCard');
-  pubCard       = document.getElementById('pubCard');
-  accessCard    = document.getElementById('accessCard');
-  chipBlood     = document.getElementById('chipBlood');
-  chipAllergy   = document.getElementById('chipAllergy');
-  chipDonor     = document.getElementById('chipDonor');
-  chipPhone     = document.getElementById('chipPhone');
-  callBtn       = document.getElementById('callBtn');
 
-  // Wire up buttons
-  startBtn.addEventListener('click', startScanner);
-  stopBtn.addEventListener('click',  stopScanner);
+readerEl      = document.getElementById('reader');
+placeholderEl = document.getElementById('placeholder');
+startBtn      = document.getElementById('startBtn');
+stopBtn       = document.getElementById('stopBtn');
+scanLine      = document.getElementById('scanLine');
+vfCorners     = document.getElementById('vfCorners');
+statusDot     = document.getElementById('statusDot');
+statusText    = document.getElementById('statusText');
 
-  document.getElementById('fileInput')
-    .addEventListener('change', scanFromFile);
+howCard       = document.getElementById('howCard');
+errorCard     = document.getElementById('errorCard');
+pubCard       = document.getElementById('pubCard');
+accessCard    = document.getElementById('accessCard');
 
-  document.getElementById('uploadBtn')
-    .addEventListener('click', () => document.getElementById('fileInput').click());
+chipBlood     = document.getElementById('chipBlood');
+chipAllergy   = document.getElementById('chipAllergy');
+chipDonor     = document.getElementById('chipDonor');
+chipPhone     = document.getElementById('chipPhone');
 
-  document.getElementById('btnPin')
-    .addEventListener('click', () => goToAccess('pin'));
+callBtn       = document.getElementById('callBtn');
 
-  document.getElementById('btnOverride')
-    .addEventListener('click', () => goToAccess('override'));
+startBtn.addEventListener('click', startScanner);
+stopBtn.addEventListener('click', stopScanner);
 
-  // Auto-demo mode via URL param: scanner.html?demo=1
-  if (new URLSearchParams(window.location.search).get('demo') === '1') {
-    setTimeout(loadDemo, 400);
-  }
+document.getElementById('uploadBtn')
+.addEventListener('click', () => {
+document.getElementById('fileInput').click();
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  CAMERA — START
-// ─────────────────────────────────────────────────────────────────────────────
-function startScanner() {
-  if (!window.Html5Qrcode) {
-    setStatus('error', 'Scanner library not loaded');
-    showError('The scanner library failed to load. Please refresh the page.');
-    return;
-  }
+document.getElementById('fileInput')
+.addEventListener('change', scanFromFile);
 
-  // Show camera area
-  placeholderEl.style.display = 'none';
-  readerEl.style.display      = 'block';
-  startBtn.classList.add('hidden');
-  stopBtn.classList.add('visible');
+document.getElementById('btnPin')
+.addEventListener('click', () => goToAccess('pin'));
 
-  setStatus('active', 'Scanning for QR code...');
-  scanLine.classList.add('active');
+document.getElementById('btnOverride')
+.addEventListener('click', () => goToAccess('override'));
 
-  html5QrCode = new Html5Qrcode('reader');
+});
 
-  const config = {
-    fps:         10,
-    qrbox:       { width: 220, height: 220 },
-    aspectRatio: 1.0
-  };
+// ─────────────────────────────────────────────
+// START CAMERA
+// ─────────────────────────────────────────────
+async function startScanner() {
 
-  html5QrCode
-    .start({ facingMode: 'environment' }, config, onScanSuccess, onScanFrameError)
-    .catch(handleCameraError);
+if (!window.Html5Qrcode) {
+showError("QR scanner library failed to load.");
+return;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  CAMERA — STOP
-// ─────────────────────────────────────────────────────────────────────────────
+try {
+
+```
+scanComplete = false;
+
+placeholderEl.style.display = "none";
+readerEl.style.display = "block";
+
+startBtn.classList.add("hidden");
+stopBtn.classList.add("visible");
+
+scanLine.classList.add("active");
+
+setStatus("active", "Starting camera...");
+
+html5QrCode = new Html5Qrcode("reader");
+
+const cameras = await Html5Qrcode.getCameras();
+
+if (!cameras || cameras.length === 0) {
+  throw new Error("No cameras found");
+}
+
+const cameraId = cameras[0].id;
+
+await html5QrCode.start(
+  cameraId,
+  {
+    fps: 10,
+    qrbox: 250
+  },
+  onScanSuccess
+);
+
+setStatus("active", "Scanning for QR code...");
+```
+
+} catch (err) {
+handleCameraError(err);
+}
+
+}
+
+// ─────────────────────────────────────────────
+// STOP CAMERA
+// ─────────────────────────────────────────────
 function stopScanner() {
-  if (html5QrCode) {
-    html5QrCode.stop().catch(() => {});
-    html5QrCode = null;
-  }
 
-  placeholderEl.style.display = 'flex';
-  readerEl.style.display      = 'none';
-  startBtn.classList.remove('hidden');
-  stopBtn.classList.remove('visible');
-  scanLine.classList.remove('active');
+if (!html5QrCode) return;
 
-  if (!scanComplete) setStatus('', 'Camera stopped');
+html5QrCode.stop()
+.then(() => {
+html5QrCode.clear();
+html5QrCode = null;
+})
+.catch(() => {});
+
+readerEl.style.display = "none";
+placeholderEl.style.display = "flex";
+
+scanLine.classList.remove("active");
+
+startBtn.classList.remove("hidden");
+stopBtn.classList.remove("visible");
+
+setStatus("", "Camera stopped");
+
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  CAMERA — ERROR HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// CAMERA ERROR
+// ─────────────────────────────────────────────
 function handleCameraError(err) {
-  console.error('Camera error:', err);
 
-  setStatus('error', 'Camera unavailable');
-  showError(
-    'Camera access was denied or is unavailable.<br/>' +
-    '• On mobile: allow camera in browser settings<br/>' +
-    '• On desktop: use Live Server (not file://)<br/>' +
-    '• Or use <strong>Upload QR Image</strong> below'
-  );
+console.error(err);
 
-  placeholderEl.style.display = 'flex';
-  readerEl.style.display      = 'none';
-  startBtn.classList.remove('hidden');
-  stopBtn.classList.remove('visible');
-  scanLine.classList.remove('active');
+setStatus("error", "Camera unavailable");
+
+showError(
+"Camera access failed.<br><br>" +
+"Possible reasons:<br>" +
+"• You opened the page using file://<br>" +
+"• Browser camera permission blocked<br><br>" +
+"✔ Use Live Server extension in VS Code"
+);
+
+readerEl.style.display = "none";
+placeholderEl.style.display = "flex";
+
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SCAN — SUCCESS CALLBACK
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// QR SUCCESS
+// ─────────────────────────────────────────────
 function onScanSuccess(decodedText) {
-  if (scanComplete) return;   // ignore duplicate frames
-  scanComplete = true;
 
-  // Stop camera
-  if (html5QrCode) {
-    html5QrCode.stop().catch(() => {});
-  }
+if (scanComplete) return;
 
-  // Update UI to success state
-  scanLine.classList.remove('active');
-  scanLine.classList.add('success');
-  vfCorners.classList.add('success');
-  stopBtn.classList.remove('visible');
+scanComplete = true;
 
-  setStatus('success', '✓ QR scanned successfully!');
+stopScanner();
 
-  // Parse and process
-  try {
-    const payload = JSON.parse(decodedText);
-    processPayload(payload);
-  } catch (e) {
-    setStatus('error', 'Invalid QR code');
-    showError('This QR code could not be read.<br/>Make sure it is a valid SecureHealth QR.');
-    scanComplete = false;
-  }
+scanLine.classList.remove("active");
+vfCorners.classList.add("success");
+
+setStatus("success", "QR Code Detected");
+
+try {
+
+```
+const payload = JSON.parse(decodedText);
+
+processPayload(payload);
+```
+
+} catch {
+
+```
+showError("Invalid QR code detected.");
+scanComplete = false;
+```
+
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SCAN — PER-FRAME ERROR (suppress — fires on every frame with no QR)
-// ─────────────────────────────────────────────────────────────────────────────
-function onScanFrameError() { /* intentionally empty */ }
+}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SCAN FROM UPLOADED IMAGE FILE
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// SCAN FROM IMAGE FILE
+// ─────────────────────────────────────────────
 function scanFromFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
 
-  setStatus('active', 'Reading image...');
-  placeholderEl.style.display = 'none';
-  readerEl.style.display      = 'block';
+const file = event.target.files[0];
 
-  // Create a temporary scanner instance for file scanning
-  const fileScanner = new Html5Qrcode('reader');
+if (!file) return;
 
-  fileScanner
-    .scanFile(file, /* showImage= */ false)
-    .then(decodedText => {
-      fileScanner.clear();
-      placeholderEl.style.display = 'flex';
-      readerEl.style.display      = 'none';
-      onScanSuccess(decodedText);
-    })
-    .catch(err => {
-      console.error('File scan error:', err);
-      fileScanner.clear();
-      placeholderEl.style.display = 'flex';
-      readerEl.style.display      = 'none';
-      setStatus('error', 'Could not read QR from image');
-      showError(
-        'No QR code found in the uploaded image.<br/>' +
-        'Make sure the image is clear, well-lit, and not cropped.'
-      );
-    });
+const fileScanner = new Html5Qrcode("reader");
 
-  // Reset file input so same file can be re-uploaded
-  event.target.value = '';
+setStatus("active", "Scanning image...");
+
+fileScanner.scanFile(file, true)
+
+```
+.then(decodedText => {
+
+  onScanSuccess(decodedText);
+
+})
+
+.catch(() => {
+
+  showError("No QR code found in the image.");
+
+});
+```
+
+event.target.value = "";
+
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  PAYLOAD PROCESSING
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// PROCESS QR DATA
+// ─────────────────────────────────────────────
 function processPayload(payload) {
 
-  // ── Handle local-mode QR (short ID → localStorage) ──
-  if (payload.local === true && payload.id) {
-    const stored = localStorage.getItem(payload.id);
-    if (stored) {
-      try {
-        payload = JSON.parse(stored);
-      } catch (e) {
-        showError('Local QR data is corrupted. Patient may need to regenerate their QR.');
-        scanComplete = false;
-        return;
-      }
-    } else {
-      showError(
-        'QR references local data that is no longer available on this device.<br/>' +
-        'Patient needs to regenerate their QR code.'
-      );
-      scanComplete = false;
-      return;
-    }
-  }
+const pub = payload.p || payload.public || {};
 
-  // ── Validate SecureHealth QR ──
-  const version = payload.v || payload.version;
-  if (!version) {
-    showError('This is not a valid SecureHealth QR code.');
-    scanComplete = false;
-    return;
-  }
+const bloodType  = pub.b ?? pub.bloodType ?? "Unknown";
+const allergy    = pub.a ? "YES — PIN needed" : "None";
+const donor      = pub.d ? "YES" : "No";
+const phone      = pub.e ?? null;
 
-  // ── Extract public data ──
-  // Supports compact format (p.b, p.a, p.d, p.e) and legacy format (public.bloodType ...)
-  const pub        = payload.p || payload.public || {};
-  const bloodType  = pub.b  ?? pub.bloodType      ?? 'Unknown';
-  const hasAllergy = pub.a  != null ? !!pub.a : !!(pub.hasAllergies);
-  const isDonor    = pub.d  != null ? !!pub.d : !!(pub.isDonor);
-  const phone      = pub.e  ?? pub.emergencyPhone  ?? null;
+chipBlood.textContent   = bloodType;
+chipAllergy.textContent = allergy;
+chipDonor.textContent   = donor;
+chipPhone.textContent   = phone || "—";
 
-  // ── Render public chips ──
-  chipBlood.textContent   = bloodType;
-  chipAllergy.textContent = hasAllergy ? 'YES — PIN for full details' : 'None reported';
-  chipDonor.textContent   = isDonor    ? 'YES'                        : 'No';
-  chipPhone.textContent   = phone      || '—';
-
-  // ── Call button ──
-  if (phone) {
-    callBtn.href        = 'tel:' + phone;
-    callBtn.textContent = '📞 Call ' + phone;
-    callBtn.style.display = 'flex';
-  } else {
-    callBtn.style.display = 'none';
-  }
-
-  // ── Show result cards, hide how-to ──
-  if (howCard)    howCard.style.display = 'none';
-  if (errorCard)  errorCard.classList.remove('visible');
-  if (pubCard)    pubCard.classList.add('visible');
-  if (accessCard) accessCard.classList.add('visible');
-
-  // ── Save payload to sessionStorage for access.html ──
-  sessionStorage.setItem('scannedPayload', JSON.stringify(payload));
+if (phone) {
+callBtn.href = "tel:" + phone;
+callBtn.textContent = "📞 Call " + phone;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  NAVIGATION — go to access.html with chosen method
-// ─────────────────────────────────────────────────────────────────────────────
+howCard.style.display = "none";
+
+pubCard.classList.add("visible");
+accessCard.classList.add("visible");
+
+sessionStorage.setItem(
+"scannedPayload",
+JSON.stringify(payload)
+);
+
+}
+
+// ─────────────────────────────────────────────
+// ACCESS NAVIGATION
+// ─────────────────────────────────────────────
 function goToAccess(type) {
-  sessionStorage.setItem('accessType', type);
-  window.location.href = 'access.html';
+
+sessionStorage.setItem("accessType", type);
+
+window.location.href = "access.html";
+
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DEMO MODE — load sample patient data without camera
-// ─────────────────────────────────────────────────────────────────────────────
-function loadDemo() {
-  const demoPayload = {
-    v:  '1',
-    p:  { b: 'O−', a: 1, d: 1, e: '9876543210' },
-    pk: 'DEMO_PIN_ENCRYPTED',
-    ok: 'DEMO_OVERRIDE_ENCRYPTED'
-  };
-
-  const demoPrivate = {
-    name:       'Ravi Kumar',
-    dob:        '1985-01-12',
-    gender:     'Male',
-    allergies:  ['Penicillin', 'Peanuts'],
-    medications:['Metformin 500mg'],
-    conditions: ['Type 2 Diabetes'],
-    emergencyContact: {
-      name:     'Priya Kumar',
-      phone:    '9876543210',
-      relation: 'Spouse'
-    },
-    organDonation: {
-      isDonor: true,
-      organs:  ['Kidney', 'Corneas']
-    }
-  };
-
-  // Pre-store decrypted data so dashboard works in demo mode
-  sessionStorage.setItem('decryptedData',  JSON.stringify(demoPrivate));
-  sessionStorage.setItem('scannedPayload', JSON.stringify(demoPayload));
-
-  processPayload(demoPayload);
-  setStatus('success', 'Demo data loaded');
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  UI HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Set the status indicator dot + text
- * @param {'active'|'success'|'error'|''} type
- * @param {string} text
- */
+// ─────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────
 function setStatus(type, text) {
-  statusDot.className  = 'status-dot'  + (type ? ' ' + type : '');
-  statusText.className = 'status-text' + (type ? ' ' + type : '');
-  statusText.textContent = text;
+
+statusDot.className = "status-dot " + type;
+statusText.className = "status-text " + type;
+statusText.textContent = text;
+
 }
 
-/**
- * Show the error card with an HTML message
- * @param {string} html
- */
 function showError(html) {
-  if (!errorCard) return;
-  errorCard.innerHTML = '⚠️ ' + html;
-  errorCard.classList.add('visible');
-  if (howCard) howCard.style.display = 'none';
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  EXPOSE globals scanner.html inline onclick handlers might need
-// ─────────────────────────────────────────────────────────────────────────────
-window.startScanner = startScanner;
-window.stopScanner  = stopScanner;
-window.loadDemo     = loadDemo;
+errorCard.innerHTML = "⚠️ " + html;
+errorCard.classList.add("visible");
+
+}

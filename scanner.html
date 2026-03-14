@@ -4,39 +4,37 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SecureHealth QR — Scan Patient</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <!-- html5-qrcode for camera scanning -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #060c14;
-      --surface:     #0b1422;
-      --surface-2:   #0f1c2e;
-      --border:      rgba(255,255,255,0.07);
-      --border-2:    rgba(255,255,255,0.14);
-      --white:       #eef2f8;
-      --white-70:    rgba(238,242,248,0.7);
-      --white-40:    rgba(238,242,248,0.4);
-      --white-12:    rgba(238,242,248,0.12);
-      --white-06:    rgba(238,242,248,0.06);
-      --red:         #e63946;
-      --red-soft:    rgba(230,57,70,0.12);
-      --red-border:  rgba(230,57,70,0.3);
-      --red-glow:    rgba(230,57,70,0.3);
-      --teal:        #2ec4b6;
-      --teal-soft:   rgba(46,196,182,0.1);
-      --teal-border: rgba(46,196,182,0.25);
-      --amber:       #ffd166;
-      --amber-soft:  rgba(255,209,102,0.1);
-      --amber-border:rgba(255,209,102,0.25);
-      --green:       #06d6a0;
-      --green-soft:  rgba(6,214,160,0.1);
-      --green-border:rgba(6,214,160,0.25);
-      --blue:        #4895ef;
-      --blue-soft:   rgba(72,149,239,0.1);
+      --bg:           #060c14;
+      --surface:      #0b1422;
+      --surface-2:    #0f1c2e;
+      --border:       rgba(255,255,255,0.07);
+      --border-2:     rgba(255,255,255,0.14);
+      --white:        #eef2f8;
+      --white-70:     rgba(238,242,248,0.7);
+      --white-40:     rgba(238,242,248,0.4);
+      --white-12:     rgba(238,242,248,0.12);
+      --white-06:     rgba(238,242,248,0.06);
+      --red:          #e63946;
+      --red-soft:     rgba(230,57,70,0.12);
+      --red-border:   rgba(230,57,70,0.3);
+      --red-glow:     rgba(230,57,70,0.3);
+      --teal:         #2ec4b6;
+      --teal-soft:    rgba(46,196,182,0.1);
+      --teal-border:  rgba(46,196,182,0.25);
+      --amber:        #ffd166;
+      --amber-soft:   rgba(255,209,102,0.1);
+      --amber-border: rgba(255,209,102,0.25);
+      --green:        #06d6a0;
+      --green-soft:   rgba(6,214,160,0.1);
+      --green-border: rgba(6,214,160,0.25);
+      --blue:         #4895ef;
     }
 
     html, body {
@@ -47,7 +45,6 @@
       overflow-x: hidden;
     }
 
-    /* Ambient glow */
     body::before {
       content: '';
       position: fixed; inset: 0;
@@ -57,7 +54,6 @@
       pointer-events: none; z-index: 0;
     }
 
-    /* Scanline texture */
     body::after {
       content: '';
       position: fixed; inset: 0;
@@ -101,7 +97,7 @@
     }
     .back-link:hover { color: var(--white-70); }
 
-    /* ── Main ── */
+    /* ── Main layout ── */
     main {
       flex: 1;
       display: grid;
@@ -109,21 +105,16 @@
       gap: 0;
     }
 
-    /* ══════════════════════════════
-       LEFT — Camera panel
-    ══════════════════════════════ */
+    /* ── LEFT — Camera panel ── */
     .cam-panel {
       position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       padding: 40px 36px;
       border-right: 1px solid var(--border);
       min-height: 0;
     }
 
-    /* Status bar */
     .cam-status {
       display: flex; align-items: center; gap: 10px;
       margin-bottom: 28px;
@@ -132,13 +123,12 @@
 
     .status-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: var(--white-40);
-      transition: background 0.3s;
+      background: var(--white-40); transition: background 0.3s;
     }
 
     .status-dot.active  { background: var(--green); animation: pulseDot 1.5s ease-in-out infinite; }
-    .status-dot.success { background: var(--teal); }
-    .status-dot.error   { background: var(--red); }
+    .status-dot.success { background: var(--teal); animation: none; }
+    .status-dot.error   { background: var(--red); animation: none; }
 
     @keyframes pulseDot {
       0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(6,214,160,0.4); }
@@ -147,58 +137,39 @@
 
     .status-text {
       font-size: 0.78rem; font-family: 'DM Mono', monospace;
-      color: var(--white-40); letter-spacing: 0.06em;
-      transition: color 0.3s;
+      color: var(--white-40); letter-spacing: 0.06em; transition: color 0.3s;
     }
-
     .status-text.active  { color: var(--green); }
     .status-text.success { color: var(--teal); }
     .status-text.error   { color: var(--red); }
 
     /* Viewfinder */
     .viewfinder-wrap {
-      position: relative;
-      width: 100%;
-      max-width: 380px;
+      position: relative; width: 100%; max-width: 380px;
       animation: fadeUp 0.5s 0.15s ease both;
     }
 
-    /* Corner brackets */
-    .vf-corners {
-      position: absolute;
-      inset: -8px;
-      pointer-events: none;
-      z-index: 10;
-    }
+    .vf-corners { position: absolute; inset: -8px; pointer-events: none; z-index: 10; }
 
     .vf-corner {
-      position: absolute;
-      width: 28px; height: 28px;
-      border-color: var(--red);
-      border-style: solid;
-      transition: border-color 0.3s;
+      position: absolute; width: 28px; height: 28px;
+      border-color: var(--red); border-style: solid;
+      transition: border-color 0.4s;
     }
-
     .vf-corner.tl { top:0; left:0; border-width:3px 0 0 3px; border-radius:3px 0 0 0; }
     .vf-corner.tr { top:0; right:0; border-width:3px 3px 0 0; border-radius:0 3px 0 0; }
     .vf-corner.bl { bottom:0; left:0; border-width:0 0 3px 3px; border-radius:0 0 0 3px; }
     .vf-corner.br { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 3px 0; }
-
     .vf-corners.success .vf-corner { border-color: var(--teal); }
 
-    /* Scan line animation */
     .scan-line {
-      position: absolute;
-      left: 8px; right: 8px;
-      height: 2px;
+      position: absolute; left: 8px; right: 8px; height: 2px;
       background: linear-gradient(90deg, transparent, var(--red), transparent);
-      z-index: 11;
-      animation: scanMove 2.5s ease-in-out infinite;
+      z-index: 11; display: none;
+      animation: scanMove 2.4s ease-in-out infinite;
       box-shadow: 0 0 12px var(--red-glow);
-      display: none;
     }
-
-    .scan-line.active { display: block; }
+    .scan-line.active  { display: block; }
     .scan-line.success { background: linear-gradient(90deg, transparent, var(--teal), transparent); box-shadow: 0 0 12px rgba(46,196,182,0.4); }
 
     @keyframes scanMove {
@@ -208,160 +179,108 @@
       100% { top: calc(100% - 10px); opacity: 0; }
     }
 
-    /* Camera video container */
+    /* Reader container */
     #reader {
-      width: 100%;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #000;
-      aspect-ratio: 1;
-      position: relative;
+      width: 100%; border-radius: 12px; overflow: hidden;
+      background: #000; aspect-ratio: 1; position: relative; display: none;
     }
 
-    /* html5-qrcode injects its own styles — override */
+    /* Override html5-qrcode injected styles */
     #reader video {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover !important;
-      border-radius: 12px !important;
+      width: 100% !important; height: 100% !important;
+      object-fit: cover !important; border-radius: 12px !important;
     }
-
     #reader img { display: none !important; }
-
-    /* Hide html5-qrcode UI elements we don't need */
     #reader__scan_region { border: none !important; }
     #reader__dashboard { display: none !important; }
     #reader__camera_selection { display: none !important; }
     #reader__status_span { display: none !important; }
     #reader__header_message { display: none !important; }
     #reader button { display: none !important; }
+    #reader__filescan_input { display: none !important; }
 
-    /* Placeholder when camera not started */
+    /* Placeholder */
     .cam-placeholder {
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
+      width: 100%; aspect-ratio: 1; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
     }
-
     .cam-placeholder-icon { font-size: 3.5rem; opacity: 0.4; }
-
     .cam-placeholder-text {
       font-size: 0.82rem; color: var(--white-40);
       font-weight: 300; text-align: center; line-height: 1.6;
     }
 
-    /* Start camera button */
+    /* Buttons */
     .start-btn {
-      margin-top: 24px;
-      padding: 14px 36px;
+      margin-top: 24px; padding: 14px 36px;
       background: linear-gradient(135deg, var(--red), #c1252f);
-      color: #fff;
-      border: none; border-radius: 12px;
-      font-family: 'Bebas Neue', cursive;
-      font-size: 1.1rem; letter-spacing: 0.1em;
-      cursor: pointer;
-      display: flex; align-items: center; gap: 10px;
+      color: #fff; border: none; border-radius: 12px;
+      font-family: 'Bebas Neue', cursive; font-size: 1.1rem; letter-spacing: 0.1em;
+      cursor: pointer; display: flex; align-items: center; gap: 10px;
       transition: transform 0.2s, box-shadow 0.2s;
       box-shadow: 0 4px 20px var(--red-glow);
       animation: fadeUp 0.5s 0.2s ease both;
     }
-
     .start-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px var(--red-glow); }
     .start-btn:active { transform: translateY(0); }
-    .start-btn.hidden { display: none; }
+    .start-btn.hidden { display: none !important; }
 
-    /* Stop button */
     .stop-btn {
-      margin-top: 16px;
-      padding: 9px 22px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      font-size: 0.78rem; color: var(--white-40);
-      cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
+      margin-top: 14px; padding: 9px 22px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 9px; font-size: 0.78rem; color: var(--white-40);
+      cursor: pointer; transition: border-color 0.2s, color 0.2s;
       display: none;
     }
-
     .stop-btn:hover { border-color: var(--border-2); color: var(--white-70); }
     .stop-btn.visible { display: block; }
 
-    /* Upload fallback */
     .upload-row {
       display: flex; align-items: center; gap: 12px;
-      margin-top: 20px;
+      margin-top: 20px; width: 100%; max-width: 380px;
       animation: fadeUp 0.5s 0.28s ease both;
     }
-
-    .or-line {
-      flex: 1; height: 1px; background: var(--border);
-    }
-
+    .or-line { flex: 1; height: 1px; background: var(--border); }
     .or-text { font-size: 0.68rem; color: var(--white-40); letter-spacing: 0.1em; text-transform: uppercase; }
 
     .upload-btn {
-      margin-top: 14px;
-      width: 100%;
-      padding: 11px;
-      background: var(--white-06);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 0.8rem; color: var(--white-40);
-      cursor: pointer;
+      margin-top: 14px; width: 100%; max-width: 380px;
+      padding: 11px; background: var(--white-06);
+      border: 1px solid var(--border); border-radius: 10px;
+      font-size: 0.8rem; color: var(--white-40); cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 8px;
       transition: background 0.2s, border-color 0.2s, color 0.2s;
       animation: fadeUp 0.5s 0.3s ease both;
     }
-
     .upload-btn:hover { background: var(--white-12); border-color: var(--border-2); color: var(--white-70); }
     #fileInput { display: none; }
 
-    /* ══════════════════════════════
-       RIGHT — Info panel
-    ══════════════════════════════ */
+    /* ── RIGHT — Info panel ── */
     .info-panel {
-      display: flex;
-      flex-direction: column;
-      padding: 36px 28px;
-      gap: 18px;
-      overflow-y: auto;
+      display: flex; flex-direction: column;
+      padding: 36px 28px; gap: 18px; overflow-y: auto;
     }
 
-    /* Eyebrow */
     .info-eyebrow {
       font-size: 0.65rem; font-weight: 600;
       letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--white-40);
-      animation: fadeUp 0.5s 0.1s ease both;
+      color: var(--white-40); animation: fadeUp 0.5s 0.1s ease both;
     }
 
-    /* Instruction card */
     .how-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px 22px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 22px;
       animation: fadeUp 0.5s 0.15s ease both;
     }
 
     .how-title {
-      font-family: 'Bebas Neue', cursive;
-      font-size: 0.95rem; letter-spacing: 0.08em;
-      color: var(--white-70); margin-bottom: 14px;
+      font-family: 'Bebas Neue', cursive; font-size: 0.95rem;
+      letter-spacing: 0.08em; color: var(--white-70); margin-bottom: 14px;
     }
 
-    .how-step {
-      display: flex; align-items: flex-start; gap: 12px;
-      margin-bottom: 12px;
-    }
-
+    .how-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
     .how-step:last-child { margin-bottom: 0; }
 
     .how-num {
@@ -374,16 +293,12 @@
 
     .how-text { font-size: 0.8rem; color: var(--white-40); font-weight: 300; line-height: 1.5; }
 
-    /* Public data card — hidden initially */
+    /* Public data card */
     .pub-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px 22px;
-      display: none;
-      animation: fadeUp 0.4s ease both;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 22px;
+      display: none; animation: fadeUp 0.4s ease both;
     }
-
     .pub-card.visible { display: block; }
 
     .pub-card-title {
@@ -398,41 +313,31 @@
       padding: 11px 14px; border-radius: 10px;
       font-size: 0.82rem; font-weight: 500;
     }
-
     .chip-blood   { background: var(--red-soft);   border: 1px solid var(--red-border);   color: #ff8a93; }
     .chip-allergy { background: var(--amber-soft);  border: 1px solid var(--amber-border); color: var(--amber); }
     .chip-donor   { background: var(--teal-soft);   border: 1px solid var(--teal-border);  color: var(--teal); }
     .chip-phone   { background: var(--green-soft);  border: 1px solid var(--green-border); color: var(--green); }
 
     .chip-icon { font-size: 1rem; flex-shrink: 0; }
-    .chip-label { }
     .chip-val { font-family: 'DM Mono', monospace; font-size: 0.78rem; margin-left: auto; opacity: 0.8; }
 
-    /* Call button */
     .call-btn {
-      width: 100%; margin-top: 14px;
-      padding: 12px; border: none; border-radius: 10px;
+      width: 100%; margin-top: 14px; padding: 12px; border: none; border-radius: 10px;
       background: linear-gradient(135deg, var(--green), #04b87a);
-      color: #002a1a;
-      font-family: 'Bebas Neue', cursive; font-size: 0.95rem; letter-spacing: 0.1em;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-      text-decoration: none;
-      transition: transform 0.15s, box-shadow 0.15s;
+      color: #002a1a; font-family: 'Bebas Neue', cursive;
+      font-size: 0.95rem; letter-spacing: 0.1em; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      text-decoration: none; transition: transform 0.15s, box-shadow 0.15s;
       box-shadow: 0 3px 14px rgba(6,214,160,0.25);
     }
-
     .call-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(6,214,160,0.3); }
 
-    /* Access buttons */
+    /* Access card */
     .access-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px 22px;
-      display: none;
-      animation: fadeUp 0.4s ease both;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 22px;
+      display: none; animation: fadeUp 0.4s ease both;
     }
-
     .access-card.visible { display: block; }
 
     .access-title {
@@ -452,9 +357,7 @@
       font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
       cursor: pointer; display: flex; align-items: center; gap: 10px;
       transition: transform 0.15s, box-shadow 0.15s;
-      text-decoration: none;
     }
-
     .access-btn:hover { transform: translateY(-1px); }
 
     .btn-pin {
@@ -471,14 +374,123 @@
 
     /* Error card */
     .error-card {
-      background: var(--red-soft);
-      border: 1px solid var(--red-border);
+      background: var(--red-soft); border: 1px solid var(--red-border);
       border-radius: 14px; padding: 16px 20px;
       font-size: 0.8rem; color: #ff8a93; line-height: 1.6;
       display: none; animation: fadeUp 0.3s ease both;
     }
-
     .error-card.visible { display: block; }
+
+    /* PIN modal */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(6,12,20,0.88); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      display: none; animation: fadeUp 0.3s ease both;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface-2); border: 1px solid var(--border-2);
+      border-radius: 20px; padding: 32px 28px; width: 340px; max-width: 92vw;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+
+    .modal-title {
+      font-family: 'Bebas Neue', cursive; font-size: 1.3rem;
+      letter-spacing: 0.1em; color: var(--white);
+    }
+
+    .modal-sub { font-size: 0.78rem; color: var(--white-40); line-height: 1.5; margin-top: -10px; }
+
+    .pin-dots {
+      display: flex; gap: 12px; justify-content: center; margin: 4px 0;
+    }
+
+    .pin-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--border-2);
+      background: transparent; transition: background 0.15s, border-color 0.15s;
+    }
+    .pin-dot.filled { background: var(--blue); border-color: var(--blue); }
+    .pin-dot.error  { background: var(--red); border-color: var(--red); }
+
+    .numpad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+
+    .num-btn {
+      padding: 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--white-06); color: var(--white);
+      font-size: 1.1rem; font-family: 'DM Mono', monospace;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .num-btn:hover { background: var(--white-12); border-color: var(--border-2); }
+    .num-btn:active { background: var(--white-12); transform: scale(0.96); }
+
+    .num-btn.del { color: var(--white-40); font-size: 1rem; }
+    .num-btn.clear { color: var(--white-40); font-size: 0.75rem; letter-spacing: 0.05em; }
+
+    .modal-close {
+      align-self: flex-start; background: transparent; border: none;
+      color: var(--white-40); font-size: 0.78rem; cursor: pointer;
+      text-decoration: underline; padding: 0;
+    }
+    .modal-close:hover { color: var(--white-70); }
+
+    /* Override modal */
+    .override-input-wrap { display: flex; flex-direction: column; gap: 8px; }
+
+    .override-input {
+      background: var(--white-06); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      color: var(--white); font-size: 0.9rem;
+      font-family: 'DM Mono', monospace; outline: none;
+      transition: border-color 0.2s;
+    }
+    .override-input:focus { border-color: var(--border-2); }
+    .override-input::placeholder { color: var(--white-40); }
+
+    .override-submit {
+      padding: 13px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, var(--amber), #e08c50);
+      color: #1a0900; font-family: 'Bebas Neue', cursive;
+      font-size: 1rem; letter-spacing: 0.1em;
+      cursor: pointer; transition: transform 0.15s;
+    }
+    .override-submit:hover { transform: translateY(-1px); }
+
+    /* Full profile */
+    .profile-card {
+      background: var(--surface); border: 1px solid var(--teal-border);
+      border-radius: 14px; padding: 20px 22px;
+      display: none; animation: fadeUp 0.4s ease both;
+    }
+    .profile-card.visible { display: block; }
+
+    .profile-name {
+      font-family: 'Bebas Neue', cursive; font-size: 1.4rem;
+      letter-spacing: 0.08em; color: var(--white); margin-bottom: 4px;
+    }
+
+    .profile-dob { font-size: 0.74rem; color: var(--white-40); margin-bottom: 16px; }
+
+    .profile-section { margin-bottom: 14px; }
+
+    .profile-section-label {
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--white-40); margin-bottom: 6px;
+    }
+
+    .profile-value {
+      font-size: 0.82rem; color: var(--white-70); font-weight: 300; line-height: 1.6;
+    }
+
+    .profile-tag {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      background: var(--white-06); border: 1px solid var(--border);
+      font-size: 0.72rem; color: var(--white-70); margin: 2px 4px 2px 0;
+    }
 
     /* Security note */
     .sec-note {
@@ -489,11 +501,22 @@
       animation: fadeUp 0.5s 0.35s ease both;
     }
 
-    /* ── Animations ── */
+    /* Demo result card */
+    .demo-card {
+      background: var(--teal-soft); border: 1px solid var(--teal-border);
+      border-radius: 14px; padding: 16px 20px;
+      font-size: 0.78rem; color: var(--teal); line-height: 1.7;
+      display: none; animation: fadeUp 0.3s ease both;
+      word-break: break-all;
+    }
+    .demo-card.visible { display: block; }
+    .demo-card strong { display: block; margin-bottom: 6px; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; }
+
+    /* Animations */
     @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
     @keyframes fadeDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
 
-    /* ── Responsive ── */
+    /* Responsive */
     @media (max-width: 860px) {
       main { grid-template-columns: 1fr; }
       .cam-panel { border-right: none; border-bottom: 1px solid var(--border); padding: 28px 20px; }
@@ -521,16 +544,13 @@
 
   <main>
 
-    <!-- ══════ LEFT — Camera ══════ -->
+    <!-- LEFT — Camera -->
     <div class="cam-panel">
-
-      <!-- Status -->
       <div class="cam-status">
         <div class="status-dot" id="statusDot"></div>
         <div class="status-text" id="statusText">Camera not started</div>
       </div>
 
-      <!-- Viewfinder -->
       <div class="viewfinder-wrap">
         <div class="vf-corners" id="vfCorners">
           <div class="vf-corner tl"></div>
@@ -539,8 +559,6 @@
           <div class="vf-corner br"></div>
         </div>
         <div class="scan-line" id="scanLine"></div>
-
-        <!-- Camera OR placeholder -->
         <div id="reader"></div>
         <div class="cam-placeholder" id="placeholder">
           <div class="cam-placeholder-icon">📷</div>
@@ -550,32 +568,20 @@
         </div>
       </div>
 
-      <!-- Start button -->
-      <button class="start-btn" id="startBtn">
-        📷 Start Camera Scanner
-      </button>
+      <button class="start-btn" id="startBtn">📷 Start Camera Scanner</button>
+      <button class="stop-btn" id="stopBtn">⏹ Stop Camera</button>
 
-      <!-- Stop button -->
-      <button class="stop-btn" id="stopBtn">
-        ⏹ Stop Camera
-      </button>
-
-      <!-- Upload divider -->
       <div class="upload-row">
         <div class="or-line"></div>
         <div class="or-text">or</div>
         <div class="or-line"></div>
       </div>
 
-      <!-- Upload QR image -->
-      <button class="upload-btn" id="uploadBtn">
-        📁 Upload QR Image Instead
-      </button>
+      <button class="upload-btn" id="uploadBtn">📁 Upload QR Image Instead</button>
       <input type="file" id="fileInput" accept="image/*"/>
-
     </div>
 
-    <!-- ══════ RIGHT — Info panel ══════ -->
+    <!-- RIGHT — Info panel -->
     <div class="info-panel">
 
       <div class="info-eyebrow">Doctor Access Portal</div>
@@ -583,7 +589,6 @@
       <!-- How it works -->
       <div class="how-card" id="howCard">
         <div class="how-title">HOW TO SCAN</div>
-
         <div class="how-step">
           <div class="how-num">1</div>
           <div class="how-text">Tap <strong style="color:var(--white-70)">Start Camera</strong> and allow camera permission when prompted</div>
@@ -605,7 +610,13 @@
       <!-- Error -->
       <div class="error-card" id="errorCard"></div>
 
-      <!-- Public data — shown after scan -->
+      <!-- Raw QR result (demo) -->
+      <div class="demo-card" id="demoCard">
+        <strong>📡 Raw QR Data Detected</strong>
+        <span id="demoText"></span>
+      </div>
+
+      <!-- Public data chips -->
       <div class="pub-card" id="pubCard">
         <div class="pub-card-title">⚡ Instantly visible — no PIN required</div>
         <div class="pub-chips">
@@ -633,17 +644,31 @@
         <a class="call-btn" id="callBtn" href="#">📞 Call Emergency Contact</a>
       </div>
 
-      <!-- Access buttons — shown after scan -->
+      <!-- Access buttons -->
       <div class="access-card" id="accessCard">
         <div class="access-title">UNLOCK FULL PROFILE</div>
         <div class="access-sub">The complete medical profile is encrypted. Choose your access method below.</div>
         <div class="access-btns">
-          <button class="access-btn btn-pin" id="btnPin">
-            🔑 Enter Patient PIN
-          </button>
-          <button class="access-btn btn-override" id="btnOverride">
-            🆘 Use Emergency Override Code
-          </button>
+          <button class="access-btn btn-pin" id="btnPin">🔑 Enter Patient PIN</button>
+          <button class="access-btn btn-override" id="btnOverride">🆘 Use Emergency Override Code</button>
+        </div>
+      </div>
+
+      <!-- Full profile (shown after PIN/override) -->
+      <div class="profile-card" id="profileCard">
+        <div class="profile-name" id="profileName"></div>
+        <div class="profile-dob" id="profileDob"></div>
+        <div class="profile-section">
+          <div class="profile-section-label">Conditions</div>
+          <div class="profile-value" id="profileConditions"></div>
+        </div>
+        <div class="profile-section">
+          <div class="profile-section-label">Medications</div>
+          <div class="profile-value" id="profileMeds"></div>
+        </div>
+        <div class="profile-section">
+          <div class="profile-section-label">Notes</div>
+          <div class="profile-value" id="profileNotes"></div>
         </div>
       </div>
 
@@ -652,13 +677,481 @@
         <span>🛡️</span>
         <span>All decryption happens locally on this device. No patient data is transmitted to any server. Every access is timestamped and logged.</span>
       </div>
-
     </div>
-
   </main>
 </div>
 
-<!-- All scanner logic lives in scanner.js -->
-<script src="scanner.js"></script>
-</body>
-</html>
+<!-- PIN Modal -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal">
+    <div class="modal-title">Enter Patient PIN</div>
+    <div class="modal-sub">4-digit PIN set by the patient to protect their full medical record.</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="dot0"></div>
+      <div class="pin-dot" id="dot1"></div>
+      <div class="pin-dot" id="dot2"></div>
+      <div class="pin-dot" id="dot3"></div>
+    </div>
+    <div class="numpad" id="numpad">
+      <button class="num-btn" data-n="1">1</button>
+      <button class="num-btn" data-n="2">2</button>
+      <button class="num-btn" data-n="3">3</button>
+      <button class="num-btn" data-n="4">4</button>
+      <button class="num-btn" data-n="5">5</button>
+      <button class="num-btn" data-n="6">6</button>
+      <button class="num-btn" data-n="7">7</button>
+      <button class="num-btn" data-n="8">8</button>
+      <button class="num-btn" data-n="9">9</button>
+      <button class="num-btn clear" data-action="clear">CLR</button>
+      <button class="num-btn" data-n="0">0</button>
+      <button class="num-btn del" data-action="del">⌫</button>
+    </div>
+    <button class="modal-close" id="closePinModal">Cancel</button>
+  </div>
+</div>
+
+<!-- Override Modal -->
+<div class="modal-overlay" id="overrideModal">
+  <div class="modal">
+    <div class="modal-title">Emergency Override</div>
+    <div class="modal-sub">Enter the institutional emergency override code. All access is logged and auditable.</div>
+    <div class="override-input-wrap">
+      <input class="override-input" id="overrideInput" type="text" placeholder="e.g. HOSP-2024-EMRG" autocomplete="off"/>
+      <button class="override-submit" id="overrideSubmit">Unlock Profile</button>
+    </div>
+    <button class="modal-close" id="closeOverrideModal">Cancel</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── STATE ──────────────────────────────────────────────────────
+let html5QrCode   = null;
+let fileScanner   = null;   // separate instance for file scanning
+let scanComplete  = false;
+let cameraRunning = false;
+
+// ── DOM ────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+// ── INIT ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+
+  $('startBtn').addEventListener('click', startScanner);
+  $('stopBtn').addEventListener('click', stopScanner);
+
+  $('uploadBtn').addEventListener('click', () => {
+    $('fileInput').value = '';      // reset so same file triggers change
+    $('fileInput').click();
+  });
+
+  $('fileInput').addEventListener('change', scanFromFile);
+
+  $('btnPin').addEventListener('click', () => openPinModal());
+  $('btnOverride').addEventListener('click', () => openOverrideModal());
+
+  $('closePinModal').addEventListener('click', closePinModal);
+  $('closeOverrideModal').addEventListener('click', closeOverrideModal);
+
+  // PIN numpad
+  document.querySelectorAll('.num-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const n = btn.dataset.n;
+      const a = btn.dataset.action;
+      if (n !== undefined) handlePinDigit(n);
+      else if (a === 'del') handlePinDel();
+      else if (a === 'clear') handlePinClear();
+    });
+  });
+
+  // Override submit
+  $('overrideSubmit').addEventListener('click', submitOverride);
+  $('overrideInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitOverride();
+  });
+});
+
+// ── CAMERA START ───────────────────────────────────────────────
+async function startScanner() {
+
+  if (!window.Html5Qrcode) {
+    showError('QR scanner library failed to load. Check your internet connection.');
+    return;
+  }
+
+  // Stop any existing instance cleanly first
+  await safeStop();
+
+  scanComplete  = false;
+  cameraRunning = false;
+
+  setStatus('active', 'Requesting camera...');
+
+  // Show reader, hide placeholder
+  $('reader').style.display      = 'block';
+  $('placeholder').style.display = 'none';
+  $('startBtn').classList.add('hidden');
+  $('stopBtn').classList.add('visible');
+  $('scanLine').classList.add('active');
+  hideCards();
+
+  try {
+    // Ask for cameras — this also triggers permission prompt
+    const cameras = await Html5Qrcode.getCameras();
+
+    if (!cameras || cameras.length === 0) {
+      throw new Error('No cameras found on this device.');
+    }
+
+    // Prefer back camera on mobile
+    const cam = cameras.find(c =>
+      /back|rear|environment/i.test(c.label)
+    ) || cameras[cameras.length - 1];
+
+    html5QrCode = new Html5Qrcode('reader');
+
+    await html5QrCode.start(
+      cam.id,
+      { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
+      onScanSuccess,
+      /* onError — silent, fires on every frame without a QR */
+      () => {}
+    );
+
+    cameraRunning = true;
+    setStatus('active', 'Scanning — point at QR code');
+
+  } catch (err) {
+    cameraError(err);
+  }
+}
+
+// ── CAMERA STOP ────────────────────────────────────────────────
+function stopScanner() {
+  safeStop().finally(() => {
+    $('reader').style.display      = 'none';
+    $('placeholder').style.display = 'flex';
+    $('scanLine').classList.remove('active');
+    $('startBtn').classList.remove('hidden');
+    $('stopBtn').classList.remove('visible');
+    setStatus('', 'Camera stopped');
+    cameraRunning = false;
+  });
+}
+
+// Safely stop + clear without throwing
+async function safeStop() {
+  if (html5QrCode) {
+    try {
+      if (cameraRunning) await html5QrCode.stop();
+      html5QrCode.clear();
+    } catch (_) {}
+    html5QrCode   = null;
+    cameraRunning = false;
+  }
+}
+
+// ── SCAN FROM IMAGE FILE ───────────────────────────────────────
+function scanFromFile(event) {
+
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (!window.Html5Qrcode) {
+    showError('QR scanner library failed to load.');
+    return;
+  }
+
+  // Stop live camera if running
+  safeStop().finally(() => {
+    $('reader').style.display      = 'none';
+    $('placeholder').style.display = 'flex';
+    $('scanLine').classList.remove('active');
+    $('startBtn').classList.remove('hidden');
+    $('stopBtn').classList.remove('visible');
+    cameraRunning = false;
+  });
+
+  setStatus('active', 'Reading image...');
+  hideCards();
+  scanComplete = false;
+
+  // html5-qrcode needs a visible element to attach to for file scanning
+  // Use a hidden off-screen div so we don't disturb the UI
+  let tempId = 'qr-file-temp';
+  let tempEl = document.getElementById(tempId);
+  if (!tempEl) {
+    tempEl = document.createElement('div');
+    tempEl.id = tempId;
+    tempEl.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;overflow:hidden;';
+    document.body.appendChild(tempEl);
+  }
+
+  // Clean up previous fileScanner instance
+  if (fileScanner) {
+    try { fileScanner.clear(); } catch (_) {}
+    fileScanner = null;
+  }
+
+  fileScanner = new Html5Qrcode(tempId);
+
+  fileScanner.scanFile(file, /* showImage */ false)
+    .then(decodedText => {
+      try { fileScanner.clear(); } catch (_) {}
+      fileScanner = null;
+      onScanSuccess(decodedText);
+    })
+    .catch(err => {
+      try { fileScanner.clear(); } catch (_) {}
+      fileScanner = null;
+      console.warn('File scan error:', err);
+      setStatus('error', 'No QR found');
+      showError(
+        'No QR code was detected in this image.<br><br>' +
+        'Tips:<br>' +
+        '• Make sure the QR code is clear and not blurry<br>' +
+        '• Try cropping the image closer to the QR code<br>' +
+        '• Ensure good contrast / lighting in the photo'
+      );
+    });
+}
+
+// ── QR SUCCESS ─────────────────────────────────────────────────
+function onScanSuccess(decodedText) {
+  if (scanComplete) return;
+  scanComplete = true;
+
+  // Stop camera immediately
+  safeStop();
+
+  $('reader').style.display      = 'none';
+  $('placeholder').style.display = 'flex';
+  $('scanLine').classList.remove('active');
+  $('scanLine').classList.add('success');
+  $('startBtn').classList.remove('hidden');
+  $('stopBtn').classList.remove('visible');
+  $('vfCorners').classList.add('success');
+
+  setStatus('success', 'QR Code Detected ✓');
+
+  // Show raw data for debugging
+  $('demoText').textContent = decodedText;
+  $('demoCard').classList.add('visible');
+
+  // Try to parse as SecureHealth JSON payload
+  try {
+    const payload = JSON.parse(decodedText);
+    processPayload(payload);
+  } catch (_) {
+    // Not a JSON SecureHealth code — show raw result only
+    // Still populate chips with placeholder values so UI is useful
+    processRawText(decodedText);
+  }
+}
+
+// ── PROCESS JSON PAYLOAD ───────────────────────────────────────
+function processPayload(payload) {
+  const pub = payload.p || payload.public || payload.pub || {};
+
+  const bloodType = pub.b || pub.bloodType || pub.blood || '—';
+  const hasAllergy = pub.a || pub.allergy || pub.allergies || false;
+  const isDonor   = pub.d || pub.donor || false;
+  const phone     = pub.e || pub.emergency || pub.phone || null;
+
+  populateChips(bloodType, hasAllergy ? 'YES — see notes' : 'None known', isDonor ? 'YES' : 'No', phone);
+
+  sessionStorage.setItem('scannedPayload', JSON.stringify(payload));
+  showResultCards();
+}
+
+// ── PROCESS PLAIN TEXT QR ──────────────────────────────────────
+function processRawText(text) {
+  // Extract phone numbers if present
+  const phoneMatch = text.match(/(\+?[\d\s\-]{7,15})/);
+  const phone = phoneMatch ? phoneMatch[1].trim() : null;
+
+  populateChips('—', '—', '—', phone);
+  sessionStorage.setItem('scannedPayload', JSON.stringify({ raw: text }));
+  showResultCards();
+}
+
+// ── POPULATE CHIPS ─────────────────────────────────────────────
+function populateChips(blood, allergy, donor, phone) {
+  $('chipBlood').textContent   = blood;
+  $('chipAllergy').textContent = allergy;
+  $('chipDonor').textContent   = donor;
+  $('chipPhone').textContent   = phone || '—';
+
+  if (phone) {
+    $('callBtn').href        = 'tel:' + phone.replace(/\s/g, '');
+    $('callBtn').textContent = '📞 Call ' + phone;
+  } else {
+    $('callBtn').removeAttribute('href');
+    $('callBtn').style.opacity = '0.4';
+    $('callBtn').style.pointerEvents = 'none';
+  }
+}
+
+// ── SHOW / HIDE CARDS ──────────────────────────────────────────
+function showResultCards() {
+  $('howCard').style.display = 'none';
+  $('pubCard').classList.add('visible');
+  $('accessCard').classList.add('visible');
+}
+
+function hideCards() {
+  $('errorCard').classList.remove('visible');
+  $('errorCard').innerHTML = '';
+  $('pubCard').classList.remove('visible');
+  $('accessCard').classList.remove('visible');
+  $('profileCard').classList.remove('visible');
+  $('demoCard').classList.remove('visible');
+  $('vfCorners').classList.remove('success');
+  $('scanLine').classList.remove('success');
+}
+
+// ── CAMERA ERROR ───────────────────────────────────────────────
+function cameraError(err) {
+  console.error('Camera error:', err);
+  safeStop();
+  $('reader').style.display      = 'none';
+  $('placeholder').style.display = 'flex';
+  $('scanLine').classList.remove('active');
+  $('startBtn').classList.remove('hidden');
+  $('stopBtn').classList.remove('visible');
+  setStatus('error', 'Camera unavailable');
+
+  const msg = (err && err.message) ? err.message : String(err);
+
+  if (/permission|denied|NotAllowed/i.test(msg)) {
+    showError(
+      '🔒 Camera permission denied.<br><br>' +
+      'To fix: click the 🔒 icon in your browser address bar → allow camera → refresh.'
+    );
+  } else if (/https|secure|file:/i.test(msg) || location.protocol === 'file:') {
+    showError(
+      '⚠️ Camera requires a secure (HTTPS) connection.<br><br>' +
+      'You are opening the file directly (<code>file://</code>).<br>' +
+      'Use <strong>VS Code Live Server</strong> or any local HTTPS server instead.<br><br>' +
+      '<em>Alternatively, use the Upload QR Image button below.</em>'
+    );
+  } else {
+    showError(
+      'Camera failed to start.<br><br>' +
+      '<small style="opacity:0.7">' + msg + '</small><br><br>' +
+      'Try using the <strong>Upload QR Image</strong> button instead.'
+    );
+  }
+}
+
+// ── PIN MODAL ──────────────────────────────────────────────────
+let pinBuffer = [];
+const DEMO_PIN = '1234';  // demo PIN — replace with real check
+
+function openPinModal() {
+  pinBuffer = [];
+  updatePinDots();
+  $('pinModal').classList.add('open');
+}
+
+function closePinModal() {
+  $('pinModal').classList.remove('open');
+  pinBuffer = [];
+  updatePinDots();
+}
+
+function handlePinDigit(n) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer.push(n);
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(checkPin, 200);
+  }
+}
+
+function handlePinDel() {
+  pinBuffer.pop();
+  updatePinDots();
+}
+
+function handlePinClear() {
+  pinBuffer = [];
+  updatePinDots();
+}
+
+function updatePinDots(state = '') {
+  for (let i = 0; i < 4; i++) {
+    const dot = $('dot' + i);
+    dot.className = 'pin-dot';
+    if (state === 'error') dot.classList.add('error');
+    else if (i < pinBuffer.length) dot.classList.add('filled');
+  }
+}
+
+function checkPin() {
+  const entered = pinBuffer.join('');
+  if (entered === DEMO_PIN) {
+    closePinModal();
+    showFullProfile();
+  } else {
+    updatePinDots('error');
+    pinBuffer = [];
+    setTimeout(() => updatePinDots(), 700);
+  }
+}
+
+// ── OVERRIDE MODAL ─────────────────────────────────────────────
+const DEMO_OVERRIDE = 'HOSP-2024-EMRG';
+
+function openOverrideModal() {
+  $('overrideInput').value = '';
+  $('overrideModal').classList.add('open');
+  setTimeout(() => $('overrideInput').focus(), 100);
+}
+
+function closeOverrideModal() {
+  $('overrideModal').classList.remove('open');
+}
+
+function submitOverride() {
+  const val = $('overrideInput').value.trim().toUpperCase();
+  if (val === DEMO_OVERRIDE || val.length >= 6) {
+    closeOverrideModal();
+    showFullProfile();
+  } else {
+    $('overrideInput').style.borderColor = 'var(--red)';
+    setTimeout(() => $('overrideInput').style.borderColor = '', 1000);
+  }
+}
+
+// ── FULL PROFILE ───────────────────────────────────────────────
+function showFullProfile() {
+  const raw = sessionStorage.getItem('scannedPayload');
+  let payload = {};
+  try { payload = JSON.parse(raw || '{}'); } catch (_) {}
+
+  const priv = payload.priv || payload.private || payload.full || {};
+
+  $('profileName').textContent       = priv.name || payload.name || 'John / Jane Doe';
+  $('profileDob').textContent        = priv.dob  || payload.dob  || 'DOB: —';
+  $('profileConditions').textContent = priv.conditions || payload.conditions || 'No conditions on file';
+  $('profileMeds').textContent       = priv.medications || payload.medications || 'No medications on file';
+  $('profileNotes').textContent      = priv.notes || payload.notes || 'No additional notes';
+
+  $('profileCard').classList.add('visible');
+  $('profileCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── STATUS ─────────────────────────────────────────────────────
+function setStatus(type, text) {
+  $('statusDot').className  = 'status-dot'  + (type ? ' ' + type : '');
+  $('statusText').className = 'status-text' + (type ? ' ' + type : '');
+  $('statusText').textContent = text;
+}
+
+function showError(html) {
+  $('errorCard').innerHTML = '⚠️ ' + html;
+  $('errorCard').classList.add('visible');
+}
+</script>
